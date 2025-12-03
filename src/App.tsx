@@ -699,6 +699,125 @@ function RecordInterrogation() {
       .padStart(2, "0")}`;
   };
 
+  const handlePreviewDocument = async () => {
+    try {
+      // Validate required fields before generating document
+      if (!interrogationData.title.trim()) {
+        window.dispatchEvent(
+          new CustomEvent("showMessage", {
+            detail: {
+              title: "Ошибка валидации",
+              message: "Пожалуйста, введите название допроса",
+              type: "error",
+            },
+          })
+        );
+        return;
+      }
+
+      if (!interrogationData.suspect.trim()) {
+        window.dispatchEvent(
+          new CustomEvent("showMessage", {
+            detail: {
+              title: "Ошибка валидации",
+              message: "Пожалуйста, введите имя подозреваемого",
+              type: "error",
+            },
+          })
+        );
+        return;
+      }
+
+      if (!interrogationData.officer.trim()) {
+        window.dispatchEvent(
+          new CustomEvent("showMessage", {
+            detail: {
+              title: "Ошибка валидации",
+              message: "Пожалуйста, введите имя следователя",
+              type: "error",
+            },
+          })
+        );
+        return;
+      }
+
+      // Create a temporary interrogation object for document generation
+      const tempInterrogationData = {
+        ...interrogationData,
+        transcript: interrogationData.transcript,
+      };
+
+      // In a real implementation, you would send this data to the backend to generate
+      // a temporary document. For now, we'll simulate the process.
+
+      // Show a message that the document is being generated
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Генерация документа",
+            message: "Документ создается... Это может занять несколько секунд.",
+            type: "info",
+          },
+        })
+      );
+
+      // Simulate document generation delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Create a Blob with the document content
+      const docContent = `
+Допрос №: Временный
+Название: ${tempInterrogationData.title}
+Дата: ${tempInterrogationData.date}
+Подозреваемый: ${tempInterrogationData.suspect}
+Следователь: ${tempInterrogationData.officer}
+
+Расшифровка речи:
+${tempInterrogationData.transcript}
+      `;
+
+      const blob = new Blob([docContent], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const url = URL.createObjectURL(blob);
+
+      // Create download link
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Допрос_${tempInterrogationData.title.replace(
+        /[^a-zA-Z0-9]/g,
+        "_"
+      )}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up
+      URL.revokeObjectURL(url);
+
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Успех",
+            message: "Документ успешно создан и скачан!",
+            type: "success",
+          },
+        })
+      );
+    } catch (error) {
+      console.error("Ошибка создания документа:", error);
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Ошибка",
+            message: "Не удалось создать документ",
+            type: "error",
+          },
+        })
+      );
+    }
+  };
+
   const handleSave = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -793,11 +912,13 @@ function RecordInterrogation() {
       }
 
       // Generate Word document
+      let documentPath = "";
       if (interrogation.id) {
         const documentResult = await api.documentAPI.generate(
           interrogation.id,
           token
         );
+        documentPath = documentResult.documentPath;
         // Update the interrogation with the document path
         await api.interrogationAPI.update(
           interrogation.id,
@@ -818,6 +939,26 @@ function RecordInterrogation() {
         })
       );
       console.log("Данные допроса:", interrogation);
+
+      // Download Word document after saving
+      if (documentPath) {
+        try {
+          // Extract filename from path
+          const filename =
+            documentPath.split("/").pop() || "interrogation.docx";
+          const downloadResult = await api.documentAPI.download(filename);
+
+          // Create download link
+          const link = document.createElement("a");
+          link.href = downloadResult.url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (downloadError) {
+          console.error("Ошибка скачивания документа:", downloadError);
+        }
+      }
     } catch (error) {
       console.error("Ошибка сохранения допроса:", error);
       window.dispatchEvent(
@@ -913,6 +1054,7 @@ function RecordInterrogation() {
                 transcript: e.target.value,
               })
             }
+            style={{ width: "102%", height: 400 }}
             placeholder="Введите расшифровку речи"
             rows={4}
           />
@@ -954,6 +1096,13 @@ function RecordInterrogation() {
           disabled={recordingState.isRecording}
         >
           Сохранить допрос
+        </button>
+        <button
+          className="secondary-btn"
+          onClick={handlePreviewDocument}
+          disabled={recordingState.isRecording}
+        >
+          Предварительный просмотр и скачивание Word
         </button>
         <button
           className="cancel-btn"

@@ -483,6 +483,20 @@ body {
   background-color: #5a6268;
 }
 
+.secondary-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.secondary-btn:hover {
+  background-color: #218838;
+}
+
 /* Recording Interrogation */
 .recording-container {
   max-width: 800px;
