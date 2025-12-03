@@ -1109,7 +1109,14 @@ function AdminDashboard() {
       ) : (
         <>
           <div className="admin-section">
-            <div className="section-header">
+            <div
+              className="section-header"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <h3>Управление пользователями</h3>
               <button className="add-btn" onClick={handleAddUser}>
                 + Добавить пользователя
@@ -1118,19 +1125,17 @@ function AdminDashboard() {
 
             <div className="users-table">
               <div className="table-header">
-                <div>ID</div>
                 <div>Имя пользователя</div>
                 <div>Роль</div>
                 <div>Действия</div>
               </div>
               {users.map((user) => (
                 <div key={user._id} className="table-row">
-                  <div data-label="ID">{user._id}</div>
-                  <div data-label="Имя пользователя">{user.username}</div>
-                  <div data-label="Роль">
+                  <div>{user.username}</div>
+                  <div>
                     {user.role === "admin" ? "Администратор" : "Следователь"}
                   </div>
-                  <div data-label="Действия">
+                  <div>
                     <button
                       className="action-btn-small"
                       onClick={() => handleEditUser(user)}

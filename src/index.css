@@ -54,6 +54,28 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+.user-form-container select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* При фокусе */
+.user-form-container select:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 4px rgba(74, 144, 226, 0.4);
+  outline: none;
+}
+
+/* Отключённый вариант, если понадобится */
+.user-form-container select:disabled {
+  background-color: #f4f4f4;
+  cursor: not-allowed;
+}
 
 @media (prefers-color-scheme: light) {
   :root {

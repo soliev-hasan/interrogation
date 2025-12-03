@@ -32,7 +32,8 @@ const InterrogationSchema: Schema = new Schema(
     },
     notes: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
     audioFilePath: {
       type: String,

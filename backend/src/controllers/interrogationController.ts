@@ -47,7 +47,21 @@ export const getInterrogationById = async (
     }
 
     // Check if user has permission to access this interrogation
-    if (userRole !== "admin" && interrogation.createdBy.toString() !== userId) {
+    // Handle both populated and non-populated createdBy field
+    let interrogationCreatorId: string;
+    if (
+      typeof interrogation.createdBy === "object" &&
+      interrogation.createdBy !== null &&
+      "_id" in interrogation.createdBy
+    ) {
+      // createdBy is populated, extract the _id
+      interrogationCreatorId = (interrogation.createdBy as any)._id.toString();
+    } else {
+      // createdBy is just an ObjectId
+      interrogationCreatorId = (interrogation.createdBy as any).toString();
+    }
+
+    if (userRole !== "admin" && interrogationCreatorId !== userId) {
       res.status(403).json({ message: "Access denied" });
       return;
     }
@@ -135,7 +149,21 @@ export const updateInterrogation = async (
     }
 
     // Check if user has permission to update this interrogation
-    if (userRole !== "admin" && interrogation.createdBy.toString() !== userId) {
+    // Handle both populated and non-populated createdBy field
+    let interrogationCreatorId: string;
+    if (
+      typeof interrogation.createdBy === "object" &&
+      interrogation.createdBy !== null &&
+      "_id" in interrogation.createdBy
+    ) {
+      // createdBy is populated, extract the _id
+      interrogationCreatorId = (interrogation.createdBy as any)._id.toString();
+    } else {
+      // createdBy is just an ObjectId
+      interrogationCreatorId = (interrogation.createdBy as any).toString();
+    }
+
+    if (userRole !== "admin" && interrogationCreatorId !== userId) {
       res.status(403).json({ message: "Access denied" });
       return;
     }
@@ -172,7 +200,7 @@ export const deleteInterrogation = async (
 ): Promise<void> => {
   try {
     const id = req.params.id;
-    
+
     // Check if ID is provided
     if (!id) {
       res.status(400).json({ message: "Interrogation ID is required" });
@@ -196,7 +224,21 @@ export const deleteInterrogation = async (
     }
 
     // Check if user has permission to delete this interrogation
-    if (userRole !== "admin" && interrogation.createdBy.toString() !== userId) {
+    // Handle both populated and non-populated createdBy field
+    let interrogationCreatorId: string;
+    if (
+      typeof interrogation.createdBy === "object" &&
+      interrogation.createdBy !== null &&
+      "_id" in interrogation.createdBy
+    ) {
+      // createdBy is populated, extract the _id
+      interrogationCreatorId = (interrogation.createdBy as any)._id.toString();
+    } else {
+      // createdBy is just an ObjectId
+      interrogationCreatorId = (interrogation.createdBy as any).toString();
+    }
+
+    if (userRole !== "admin" && interrogationCreatorId !== userId) {
       res.status(403).json({ message: "Access denied" });
       return;
     }
