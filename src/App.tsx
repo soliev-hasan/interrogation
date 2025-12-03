@@ -10,8 +10,7 @@ interface InterrogationData {
   date: string;
   suspect: string;
   officer: string;
-  notes: string;
-  transcript?: string;
+  transcript: string;
   audioUrl?: string;
   wordDocumentPath?: string;
 }
@@ -502,9 +501,9 @@ function ViewInterrogation({
         </div>
 
         <div className="detail-row">
-          <label>Заметки:</label>
+          <label>Расшифровка речи:</label>
           <div className="detail-value notes">
-            {interrogation.notes || "Нет заметок"}
+            {interrogation.transcript || "Нет расшифровки"}
           </div>
         </div>
 
@@ -557,6 +556,8 @@ function RecordInterrogation() {
     recordingTime: 0,
   });
 
+  const recognitionRef = useRef<any>(null);
+
   const timerIntervalRef = useRef<any>(null);
 
   const [interrogationData, setInterrogationData] = useState({
@@ -564,7 +565,7 @@ function RecordInterrogation() {
     date: new Date().toISOString().split("T")[0],
     suspect: "",
     officer: "",
-    notes: "",
+    transcript: "",
   });
 
   const startRecording = async () => {
@@ -606,6 +607,48 @@ function RecordInterrogation() {
         }));
       }, 1000);
 
+      // Start speech recognition if available
+      const SpeechRecognition =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "ru-RU"; // Russian language
+
+        recognition.onresult = (event: any) => {
+          let interimTranscript = "";
+          let finalTranscript = "";
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + " ";
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+
+          // Update the transcript in the input field
+          if (finalTranscript || interimTranscript) {
+            setInterrogationData((prev) => ({
+              ...prev,
+              transcript: prev.transcript + finalTranscript,
+            }));
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          console.error("Speech recognition error:", event.error);
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+      } else {
+        console.warn("Web Speech API is not supported in this browser");
+      }
+
       setRecordingState({
         isRecording: true,
         mediaRecorder,
@@ -634,6 +677,11 @@ function RecordInterrogation() {
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
+      }
+
+      // Stop speech recognition
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
 
       setRecordingState((prev) => ({
@@ -707,9 +755,14 @@ function RecordInterrogation() {
         return;
       }
 
-      // Save interrogation data
+      // Save interrogation data with real-time transcript
+      const dataToSave = {
+        ...interrogationData,
+        transcript: interrogationData.transcript,
+      };
+
       const interrogation = await api.interrogationAPI.create(
-        interrogationData,
+        dataToSave,
         token
       );
 
@@ -850,17 +903,17 @@ function RecordInterrogation() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="notes">Заметки:</label>
+          <label htmlFor="transcript">Расшифровка речи:</label>
           <textarea
-            id="notes"
-            value={interrogationData.notes}
+            id="transcript"
+            value={interrogationData.transcript}
             onChange={(e) =>
               setInterrogationData({
                 ...interrogationData,
-                notes: e.target.value,
+                transcript: e.target.value,
               })
             }
-            placeholder="Введите дополнительные заметки"
+            placeholder="Введите расшифровку речи"
             rows={4}
           />
         </div>

@@ -5,9 +5,8 @@ export interface IInterrogation extends Document {
   date: Date;
   suspect: string;
   officer: string;
-  notes: string;
+  transcript: string;
   audioFilePath?: string;
-  transcript?: string;
   wordDocumentPath?: string;
   createdBy: mongoose.Types.ObjectId;
 }
@@ -30,15 +29,12 @@ const InterrogationSchema: Schema = new Schema(
       type: String,
       required: true,
     },
-    notes: {
+    transcript: {
       type: String,
       required: false,
       default: "",
     },
     audioFilePath: {
-      type: String,
-    },
-    transcript: {
       type: String,
     },
     wordDocumentPath: {
