@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
-import { Interrogation } from "../models/Interrogation";
+import { IInterrogation } from "../models/InterrogationModel";
 
 // Create documents directory if it doesn't exist
 const documentsDir = path.join(__dirname, "../../documents");
@@ -15,7 +15,7 @@ if (!fs.existsSync(documentsDir)) {
  * @param interrogation The interrogation data
  * @returns Path to the generated document
  */
-export const generateWordDocument = (interrogation: Interrogation): string => {
+export const generateWordDocument = (interrogation: IInterrogation): Buffer => {
   try {
     // Load the template
     const templatePath = path.join(
@@ -41,13 +41,13 @@ export const generateWordDocument = (interrogation: Interrogation): string => {
     // Set the template variables
     doc.setData({
       title: interrogation.title,
-      date: interrogation.date,
+      date: interrogation.date.toISOString().split("T")[0],
       suspect: interrogation.suspect,
       officer: interrogation.officer,
-      notes: interrogation.notes,
+      notes: interrogation.transcript || "",
       transcript: interrogation.transcript || "",
-      createdAt: interrogation.createdAt.toISOString().split("T")[0],
-      updatedAt: interrogation.updatedAt.toISOString().split("T")[0],
+      createdAt: new Date().toISOString().split("T")[0],
+      updatedAt: new Date().toISOString().split("T")[0],
     });
 
     try {
@@ -64,13 +64,13 @@ export const generateWordDocument = (interrogation: Interrogation): string => {
     });
 
     // Create filename
-    const filename = `interrogation-${interrogation.id}-${Date.now()}.docx`;
+    const filename = `interrogation-${interrogation._id}-${Date.now()}.docx`;
     const filePath = path.join(documentsDir, filename);
 
     // Write the document to disk
     fs.writeFileSync(filePath, buf);
 
-    return `/documents/${filename}`;
+    return buf;
   } catch (error) {
     console.error("Error generating Word document:", error);
     throw new Error("Failed to generate Word document");

@@ -79,7 +79,7 @@ export const createInterrogation = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { title, date, suspect, officer, notes } = req.body;
+    const { title, date, suspect, officer, transcript } = req.body;
     const userId = (req as any).userId;
 
     if (!title || !date || !suspect || !officer) {
@@ -92,7 +92,7 @@ export const createInterrogation = async (
       date,
       suspect,
       officer,
-      notes: notes || "",
+      transcript: transcript || "",
       createdBy: userId,
     });
 
@@ -133,7 +133,6 @@ export const updateInterrogation = async (
       date,
       suspect,
       officer,
-      notes,
       audioFilePath,
       transcript,
       wordDocumentPath,
@@ -174,9 +173,8 @@ export const updateInterrogation = async (
     if (date) updates.date = date;
     if (suspect) updates.suspect = suspect;
     if (officer) updates.officer = officer;
-    if (notes !== undefined) updates.notes = notes;
+    if (transcript !== undefined) updates.transcript = transcript;
     if (audioFilePath) updates.audioFilePath = audioFilePath;
-    if (transcript) updates.transcript = transcript;
     if (wordDocumentPath) updates.wordDocumentPath = wordDocumentPath;
     updates.updatedAt = new Date();
 

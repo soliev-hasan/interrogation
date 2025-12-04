@@ -354,6 +354,7 @@ function InterrogationsList() {
   const closeViewInterrogation = () => {
     setViewingInterrogation(null);
   };
+  console.log(interrogations);
 
   if (loading) {
     return <div className="loading">Загрузка допросов...</div>;
@@ -421,22 +422,6 @@ function InterrogationsList() {
                 >
                   Просмотр
                 </button>
-                <button
-                  className="action-btn-small"
-                  onClick={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("showMessage", {
-                        detail: {
-                          title: "Редактирование допроса",
-                          message: `Редактирование допроса ${interrogation.id}`,
-                          type: "info",
-                        },
-                      })
-                    )
-                  }
-                >
-                  Редактировать
-                </button>
               </div>
             </div>
           ))}
@@ -456,6 +441,7 @@ function ViewInterrogation({
 }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [loadingAudio, setLoadingAudio] = useState(false);
+  const [loadingDocument, setLoadingDocument] = useState(false);
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -469,6 +455,72 @@ function ViewInterrogation({
       setAudioUrl(interrogation.audioUrl);
     }
   }, [interrogation.audioUrl]);
+
+  const handleDownloadWord = async () => {
+    try {
+      setLoadingDocument(true);
+
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.dispatchEvent(
+          new CustomEvent("showMessage", {
+            detail: {
+              title: "Ошибка авторизации",
+              message: "Вы должны войти в систему, чтобы скачать документ",
+              type: "error",
+            },
+          })
+        );
+        return;
+      }
+
+      // Generate document on the backend
+      const documentResult = await api.documentAPI.generate(
+        interrogation.id,
+        token
+      );
+
+      // Download the document
+      const downloadResult = await api.documentAPI.download(
+        documentResult.filename
+      );
+
+      // Create download link
+      const link = document.createElement("a");
+      link.href = downloadResult.url;
+      link.download = `Допрос_${interrogation.title.replace(
+        /[^a-zA-Z0-9]/g,
+        "_"
+      )}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Успех",
+            message: "Документ успешно скачан!",
+            type: "success",
+          },
+        })
+      );
+    } catch (error) {
+      console.error("Ошибка скачивания документа:", error);
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Ошибка",
+            message: "Не удалось скачать документ",
+            type: "error",
+          },
+        })
+      );
+    } finally {
+      setLoadingDocument(false);
+    }
+  };
 
   return (
     <div className="view-interrogation">
@@ -507,15 +559,6 @@ function ViewInterrogation({
           </div>
         </div>
 
-        {interrogation.transcript && (
-          <div className="detail-row">
-            <label>Транскрипт:</label>
-            <div className="detail-value transcript">
-              {interrogation.transcript}
-            </div>
-          </div>
-        )}
-
         <div className="audio-section">
           <h3>Аудиозапись</h3>
           {loadingAudio ? (
@@ -531,6 +574,13 @@ function ViewInterrogation({
       </div>
 
       <div className="view-actions">
+        <button
+          className="secondary-btn"
+          onClick={handleDownloadWord}
+          disabled={loadingDocument}
+        >
+          {loadingDocument ? "Скачивание..." : "Скачать Word"}
+        </button>
         <button className="cancel-btn" onClick={onClose}>
           Закрыть
         </button>
