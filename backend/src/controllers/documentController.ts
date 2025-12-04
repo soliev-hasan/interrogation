@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Interrogation from "../models/InterrogationModel";
-import { generateWordDocument } from "../utils/documentGenerator";
 
 // Generate Word document for an interrogation
 export const generateDocument = async (
@@ -18,12 +17,21 @@ export const generateDocument = async (
       return;
     }
 
-    // Generate the Word document
-    const documentBuffer = generateWordDocument(interrogation);
+    // Generate the document content
+    const content = `Interrogation Report
 
-    // In a real implementation, you would save the document to disk or cloud storage
-    // For now, we'll generate a filename
-    const filename = `interrogation_${interrogationId}_${Date.now()}.docx`;
+Название: ${interrogation.title}
+Дата: ${interrogation.date.toISOString().split("T")[0]}
+Подозреваемый: ${interrogation.suspect}
+Следователь: ${interrogation.officer}
+
+Transcript:
+${interrogation.transcript || "No transcript available"}
+
+Created: ${new Date().toISOString().split("T")[0]}`;
+
+    // Generate a filename
+    const filename = `interrogation_${interrogationId}_${Date.now()}.txt`;
     const documentPath = `/documents/${filename}`;
 
     // Save document to file system
@@ -37,7 +45,7 @@ export const generateDocument = async (
     }
 
     const filePath = path.join(documentsDir, filename);
-    fs.writeFileSync(filePath, documentBuffer);
+    fs.writeFileSync(filePath, content);
 
     // Update the interrogation with the document path
     interrogation.wordDocumentPath = documentPath;
@@ -73,11 +81,22 @@ export const downloadDocument = async (
     }
 
     // Set headers for file download
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    );
+    if (filename.endsWith(".docx")) {
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      );
+    } else {
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`
+      );
+      res.setHeader("Content-Type", "text/plain");
+    }
 
     // Send the file
     res.sendFile(filePath);

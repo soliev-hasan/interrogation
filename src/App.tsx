@@ -354,7 +354,6 @@ function InterrogationsList() {
   const closeViewInterrogation = () => {
     setViewingInterrogation(null);
   };
-  console.log(interrogations);
 
   if (loading) {
     return <div className="loading">Загрузка допросов...</div>;

@@ -229,7 +229,10 @@ export const documentAPI = {
       throw new Error("Не удалось загрузить документ");
     }
 
-    return response.json();
+    // Get the blob and create a URL for download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    return { url, filename };
   },
 };
 
