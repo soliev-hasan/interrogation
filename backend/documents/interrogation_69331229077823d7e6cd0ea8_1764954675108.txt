@@ -1,0 +1,15 @@
+Interrogation Report
+
+Название: 7
+Дата: 2025-12-05
+Подозреваемый: 7
+Следователь: 7
+
+Transcript:
+Transcription of the audio recording for interrogation 69331229077823d7e6cd0ea8...
+[00:00:01] Officer: Please state your name for the record.
+[00:00:05] Suspect: My name is 7.
+[00:00:10] Officer: You are here today because...
+[00:00:15] Suspect: I understand my rights...
+
+Created: 2025-12-05

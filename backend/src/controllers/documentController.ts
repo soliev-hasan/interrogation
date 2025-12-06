@@ -25,10 +25,9 @@ export const generateDocument = async (
 Подозреваемый: ${interrogation.suspect}
 Следователь: ${interrogation.officer}
 
-Transcript:
-${interrogation.transcript || "No transcript available"}
+Транскрипт:${interrogation.transcript || "No transcript available"}
 
-Created: ${new Date().toISOString().split("T")[0]}`;
+Создано: ${new Date().toISOString().split("T")[0]}`;
 
     // Generate a filename
     const filename = `interrogation_${interrogationId}_${Date.now()}.txt`;

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { upload } from "../utils/fileUpload";
 import Interrogation from "../models/InterrogationModel";
+import path from "path";
 
 // Handle audio file upload
 export const uploadAudio = async (
@@ -36,24 +37,28 @@ export const uploadAudio = async (
         return;
       }
 
-      // Simulate transcription of the audio file
-      // In a real application, you would use a speech-to-text service here
-      const simulatedTranscript = `Transcription of the audio recording for interrogation ${interrogationId}...
+      // Get transcript from request body or simulate if not provided
+      let transcript = req.body.transcript;
+      if (!transcript) {
+        // Simulate transcription of the audio file if no transcript provided
+        // In a real application, you would use a speech-to-text service here
+        transcript = `Transcription of the audio recording for interrogation ${interrogationId}...
 [00:00:01] Officer: Please state your name for the record.
 [00:00:05] Suspect: My name is ${interrogation.suspect}.
 [00:00:10] Officer: You are here today because...
 [00:00:15] Suspect: I understand my rights...`;
+      }
 
       // Update the interrogation with the audio file path and transcript
       interrogation.audioFilePath = `/uploads/${req.file.filename}`;
-      interrogation.transcript = simulatedTranscript;
+      interrogation.transcript = transcript;
 
       await interrogation.save();
 
       res.status(200).json({
         message: "Audio file uploaded and transcribed successfully",
         filePath: `/uploads/${req.file.filename}`,
-        transcript: simulatedTranscript,
+        transcript: transcript,
         interrogation,
       });
     } catch (error) {
@@ -67,12 +72,9 @@ export const uploadAudio = async (
 export const getAudio = async (req: Request, res: Response): Promise<void> => {
   try {
     const filename = req.params.filename;
-    // In a real application, you would serve the file here
-    // For now, we'll just send a placeholder response
-    res.status(200).json({
-      message: "Audio file retrieval would be implemented here",
-      filename,
-    });
+    // Serve the actual audio file
+    const filePath = path.join(__dirname, "../../uploads", filename);
+    res.sendFile(filePath);
   } catch (error) {
     console.error("Get audio error:", error);
     res.status(500).json({ message: "Internal server error" });

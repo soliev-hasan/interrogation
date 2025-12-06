@@ -65,7 +65,14 @@ export const interrogationAPI = {
       throw new Error("Не удалось получить допрос");
     }
 
-    return response.json();
+    const result = await response.json();
+
+    // Map _id to id for consistency with frontend expectations
+    if (result && result._id) {
+      result.id = result._id;
+    }
+
+    return result;
   },
 
   create: async (data: any, token: string) => {
@@ -82,7 +89,14 @@ export const interrogationAPI = {
       throw new Error("Не удалось создать допрос");
     }
 
-    return response.json();
+    const result = await response.json();
+
+    // Map _id to id for consistency with frontend expectations
+    if (result && result._id) {
+      result.id = result._id;
+    }
+
+    return result;
   },
 
   update: async (id: string, data: any, token: string) => {
@@ -99,7 +113,14 @@ export const interrogationAPI = {
       throw new Error("Не удалось обновить допрос");
     }
 
-    return response.json();
+    const result = await response.json();
+
+    // Map _id to id for consistency with frontend expectations
+    if (result && result._id) {
+      result.id = result._id;
+    }
+
+    return result;
   },
 
   delete: async (id: string, token: string) => {
@@ -238,9 +259,15 @@ export const documentAPI = {
 
 // Audio API
 export const audioAPI = {
-  upload: async (interrogationId: string, audioFile: File, token: string) => {
+  upload: async (
+    interrogationId: string,
+    audioFile: File,
+    transcript: string,
+    token: string
+  ) => {
     const formData = new FormData();
     formData.append("audio", audioFile);
+    formData.append("transcript", transcript);
 
     const response = await fetch(
       `${API_BASE_URL}/audio/upload/${interrogationId}`,

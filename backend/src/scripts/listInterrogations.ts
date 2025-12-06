@@ -29,11 +29,12 @@ const listInterrogations = async () => {
       console.log(`Suspect: ${interrogation.suspect}`);
       console.log(`Officer: ${interrogation.officer}`);
       console.log(`Transcript: ${interrogation.transcript}`);
+      // @ts-ignore
+      console.log(`Audio File Path: ${interrogation.audioFilePath}`);
       if (interrogation.createdBy) {
         // @ts-ignore
-        console.log(
-          `Created By: ${interrogation.createdBy.username} (${interrogation.createdBy.email})`
-        );
+        const createdBy = interrogation.createdBy as any;
+        console.log(`Created By: ${createdBy.username} (${createdBy.email})`);
       }
       // @ts-ignore
       console.log(`Created: ${interrogation.createdAt}`);
