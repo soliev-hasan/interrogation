@@ -2,6 +2,8 @@
 
 This is the backend API for the Interrogation Management System built with Node.js, Express, and TypeScript.
 
+start : venv/bin/python app.py
+
 ## Getting Started
 
 ### Installation

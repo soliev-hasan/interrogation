@@ -1367,7 +1367,7 @@ ${tempInterrogationData.transcript}
           date: interrogationData.date,
           suspect: interrogationData.suspect,
           officer: interrogationData.officer,
-          transcript: "", // Will be updated after audio processing
+          transcript: interrogationData.transcript, // Use the transcript from the frontend
         },
         token
       );
@@ -1383,8 +1383,8 @@ ${tempInterrogationData.transcript}
 
       console.log("Created interrogation:", interrogationResponse);
 
-      // If we have audio, upload it and get the transcript
-      let transcript = "";
+      // If we have audio, transcribe it and then upload it
+      let transcript = interrogationData.transcript;
       let audioFilePath = "";
       if (recordingState.audioChunks.length > 0 && interrogationResponse.id) {
         const audioBlob = new Blob(recordingState.audioChunks, {
@@ -1395,6 +1395,20 @@ ${tempInterrogationData.transcript}
           `interrogation-${interrogationResponse.id}.wav`,
           { type: "audio/wav" }
         );
+
+        // Transcribe the audio using our new Python service
+        try {
+          const transcriptionResponse = await api.audioAPI.transcribe(
+            audioFile,
+            "ru-RU"
+          );
+          console.log("Transcription response:", transcriptionResponse);
+          transcript = transcriptionResponse.transcription || transcript;
+        } catch (transcriptionError) {
+          console.error("Error transcribing audio:", transcriptionError);
+          // If transcription fails, we'll use the manual transcript from the frontend
+        }
+
         // Validate that we have a valid interrogation ID before uploading audio
         if (!interrogationResponse || !interrogationResponse.id) {
           throw new Error(
@@ -1405,14 +1419,14 @@ ${tempInterrogationData.transcript}
         const audioResponse = await api.audioAPI.upload(
           interrogationResponse.id,
           audioFile,
-          interrogationData.transcript, // Pass the actual transcript from the frontend
+          transcript, // Pass the actual transcript (either transcribed or manual)
           token
         );
         console.log("Audio upload response:", audioResponse);
 
         // Extract transcript and audio file path from response
         transcript =
-          audioResponse.transcript || audioResponse.transcription || "";
+          audioResponse.transcript || audioResponse.transcription || transcript;
         audioFilePath =
           audioResponse.filePath ||
           audioResponse.audioFilePath ||

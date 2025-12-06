@@ -294,6 +294,26 @@ export const audioAPI = {
       throw new Error("Не удалось получить аудио");
     }
 
+    // Return the audio blob directly
+    return response.blob();
+  },
+
+  // New function to transcribe audio using our Python service
+  transcribe: async (audioFile: File, language: string = "ru-RU") => {
+    const formData = new FormData();
+    formData.append("audio", audioFile);
+    formData.append("language", language);
+
+    // Our Python service runs on port 8000
+    const response = await fetch("http://localhost:8000/transcribe", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Не удалось транскрибировать аудио");
+    }
+
     return response.json();
   },
 };
