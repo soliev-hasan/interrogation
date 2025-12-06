@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import "./App.css";
 import * as api from "./services/api";
 import MessageModal from "./components/MessageModal";
 
@@ -143,13 +142,13 @@ function App() {
 
   // Show loading state while checking session
   if (loading) {
-    return <div className="loading">Загрузка...</div>;
+    return (
+      <div className="text-center py-8 text-gray-600">Загрузка...</div>
+    );
   }
 
   return (
-    <div className="app">
-      {/* Test element to verify CSS is working */}
-
+    <div className="min-h-screen">
       <MessageModal
         isOpen={messageModal.isOpen}
         onClose={closeMessageModal}
@@ -161,30 +160,58 @@ function App() {
       {!user ? (
         <AuthForm type="login" onLogin={handleLogin} onSwitch={() => {}} />
       ) : (
-        <div className="main-layout">
-          <header className="header">
-            <div className="header-content">
-              <h1>Система ведения допросов</h1>
-              <nav className="navigation">
-                <button onClick={() => setActiveView("dashboard")}>
-                  Панель управления
-                </button>
-                <button onClick={() => setActiveView("interrogations")}>
-                  Допросы
-                </button>
-                <button onClick={() => setActiveView("record")}>Запись</button>
-                {user?.role === "admin" && (
-                  <button onClick={() => setActiveView("admin")}>Админ</button>
-                )}
-                <button onClick={() => setActiveView("profile")}>
-                  Профиль
-                </button>
-                <button onClick={handleLogout}>Выйти</button>
-              </nav>
+        <div className="flex flex-col min-h-screen">
+          <header className="bg-white shadow-md sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col sm:flex-row justify-between items-center py-4 gap-4">
+                <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">
+                  Система ведения допросов
+                </h1>
+                <nav className="flex flex-wrap gap-2 justify-center">
+                  <button
+                    onClick={() => setActiveView("dashboard")}
+                    className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded transition-colors"
+                  >
+                    Панель управления
+                  </button>
+                  <button
+                    onClick={() => setActiveView("interrogations")}
+                    className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded transition-colors"
+                  >
+                    Допросы
+                  </button>
+                  <button
+                    onClick={() => setActiveView("record")}
+                    className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded transition-colors"
+                  >
+                    Запись
+                  </button>
+                  {user?.role === "admin" && (
+                    <button
+                      onClick={() => setActiveView("admin")}
+                      className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded transition-colors"
+                    >
+                      Админ
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setActiveView("profile")}
+                    className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded transition-colors"
+                  >
+                    Профиль
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded transition-colors"
+                  >
+                    Выйти
+                  </button>
+                </nav>
+              </div>
             </div>
           </header>
 
-          <main className="main-content">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
             {activeView === "dashboard" && <Dashboard />}
             {activeView === "interrogations" && (
               <InterrogationsList refreshKey={interrogationsRefreshKey} />
@@ -217,30 +244,50 @@ function AuthForm({ type, onLogin, onSwitch }: AuthFormProps) {
   };
 
   return (
-    <div className="auth-container">
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <h2>Вход в систему</h2>
-        <div className="form-group">
-          <label htmlFor="username">Имя пользователя:</label>
+    <div className="flex justify-center items-center min-h-screen p-4">
+      <form
+        className="bg-white p-6 sm:p-8 rounded-lg shadow-lg w-full max-w-md"
+        onSubmit={handleSubmit}
+      >
+        <h2 className="text-center mb-6 text-2xl font-semibold text-gray-800">
+          Вход в систему
+        </h2>
+        <div className="mb-4">
+          <label
+            htmlFor="username"
+            className="block mb-2 font-medium text-gray-700"
+          >
+            Имя пользователя:
+          </label>
           <input
             id="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             required
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="password">Пароль:</label>
+        <div className="mb-4">
+          <label
+            htmlFor="password"
+            className="block mb-2 font-medium text-gray-700"
+          >
+            Пароль:
+          </label>
           <input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             required
           />
         </div>
-        <button type="submit" className="submit-btn">
+        <button
+          type="submit"
+          className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium"
+        >
           Войти
         </button>
       </form>
@@ -250,34 +297,46 @@ function AuthForm({ type, onLogin, onSwitch }: AuthFormProps) {
 
 function Dashboard() {
   return (
-    <div className="dashboard">
-      <h2>Панель управления следователя</h2>
-      <div className="dashboard-stats">
-        <div className="stat-card">
-          <h3>Всего допросов</h3>
-          <p>12</p>
+    <div className="max-w-4xl mx-auto">
+      <h2 className="text-center mb-8 text-2xl sm:text-3xl font-semibold text-gray-800">
+        Панель управления следователя
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+          <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
+            Всего допросов
+          </h3>
+          <p className="text-3xl sm:text-4xl font-bold text-blue-600">12</p>
         </div>
-        <div className="stat-card">
-          <h3>В этом месяце</h3>
-          <p>3</p>
+        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+          <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
+            В этом месяце
+          </h3>
+          <p className="text-3xl sm:text-4xl font-bold text-blue-600">3</p>
         </div>
-        <div className="stat-card">
-          <h3>На рассмотрении</h3>
-          <p>2</p>
+        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+          <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
+            На рассмотрении
+          </h3>
+          <p className="text-3xl sm:text-4xl font-bold text-blue-600">2</p>
         </div>
       </div>
-      <div className="quick-actions">
-        <button
-          className="action-btn"
-          onClick={() => {
-            // Navigate to the record view
-            window.location.hash = "#record";
-            document.dispatchEvent(new CustomEvent("navigateToRecord"));
-          }}
-        >
-          Начать новый допрос
-        </button>
-        <button className="action-btn">Просмотреть последние</button>
+      <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-center font-medium"
+            onClick={() => {
+              // Navigate to the record view
+              window.location.hash = "#record";
+              document.dispatchEvent(new CustomEvent("navigateToRecord"));
+            }}
+          >
+            Начать новый допрос
+          </button>
+          <button className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-center font-medium">
+            Просмотреть последние
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -416,7 +475,9 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
   };
 
   if (loading) {
-    return <div className="loading">Загрузка допросов...</div>;
+    return (
+      <div className="text-center py-8 text-gray-600">Загрузка допросов...</div>
+    );
   }
 
   // If viewing an interrogation, show the view component
@@ -430,12 +491,14 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
   }
 
   return (
-    <div className="interrogations-list">
-      <div className="list-header">
-        <h2>Допросы</h2>
-        <div className="header-actions">
+    <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">
+          Допросы
+        </h2>
+        <div className="flex gap-2 items-center">
           <button
-            className="add-btn"
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm sm:text-base"
             onClick={() => {
               // Navigate to the record view
               window.location.hash = "#record";
@@ -445,7 +508,7 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
             + Новый допрос
           </button>
           <button
-            className="refresh-btn"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-lg sm:text-xl"
             onClick={fetchInterrogations}
             title="Обновить список"
           >
@@ -454,39 +517,75 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
         </div>
       </div>
 
-      {error && <div className="error-message">Ошибка: {error}</div>}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          Ошибка: {error}
+        </div>
+      )}
 
       {interrogations.length === 0 ? (
-        <div className="no-data">Нет доступных допросов</div>
+        <div className="text-center py-8 text-gray-500 italic">
+          Нет доступных допросов
+        </div>
       ) : (
-        <div className="interrogations-table">
-          <div className="table-header">
-            <div>Название</div>
-            <div>Дата</div>
-            <div>Подозреваемый</div>
-            <div>Следователь</div>
-            <div>Действия</div>
-          </div>
-          {interrogations.map((interrogation) => (
-            <div key={interrogation.id} className="table-row">
-              <div>{interrogation.title}</div>
-              <div>
-                {interrogation.date
-                  ? new Date(interrogation.date).toLocaleDateString("ru-RU")
-                  : "Нет даты"}
-              </div>
-              <div>{interrogation.suspect || "Не указан"}</div>
-              <div>{interrogation.officer || "Не указан"}</div>
-              <div>
-                <button
-                  className="action-btn-small"
-                  onClick={() => handleViewInterrogation(interrogation.id)}
-                >
-                  Просмотр
-                </button>
-              </div>
+        <div className="overflow-x-auto">
+          <div className="min-w-full">
+            <div className="hidden sm:grid sm:grid-cols-5 bg-gray-100 p-4 font-bold text-gray-700">
+              <div>Название</div>
+              <div>Дата</div>
+              <div>Подозреваемый</div>
+              <div>Следователь</div>
+              <div>Действия</div>
             </div>
-          ))}
+            {interrogations.map((interrogation) => (
+              <div
+                key={interrogation.id}
+                className="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:gap-0 p-4 border-b border-gray-200 last:border-b-0 sm:items-center"
+              >
+                <div className="sm:contents">
+                  <span className="sm:hidden font-bold text-gray-600">
+                    Название:{" "}
+                  </span>
+                  <div className="break-words">{interrogation.title}</div>
+                </div>
+                <div className="sm:contents">
+                  <span className="sm:hidden font-bold text-gray-600">
+                    Дата:{" "}
+                  </span>
+                  <div>
+                    {interrogation.date
+                      ? new Date(interrogation.date).toLocaleDateString(
+                          "ru-RU"
+                        )
+                      : "Нет даты"}
+                  </div>
+                </div>
+                <div className="sm:contents">
+                  <span className="sm:hidden font-bold text-gray-600">
+                    Подозреваемый:{" "}
+                  </span>
+                  <div>{interrogation.suspect || "Не указан"}</div>
+                </div>
+                <div className="sm:contents">
+                  <span className="sm:hidden font-bold text-gray-600">
+                    Следователь:{" "}
+                  </span>
+                  <div>{interrogation.officer || "Не указан"}</div>
+                </div>
+                <div className="sm:contents">
+                  <span className="sm:hidden font-bold text-gray-600">
+                    Действия:{" "}
+                  </span>
+                  <button
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                    onClick={() => handleViewInterrogation(interrogation.id)}
+                  >
+                    Просмотр
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -731,47 +830,64 @@ function ViewInterrogation({
   };
 
   return (
-    <div className="view-interrogation">
-      <div className="view-header">
-        <h2>Просмотр допроса</h2>
-        <button className="close-btn" onClick={onClose}>
+    <div className="max-w-4xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-gray-200">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">
+          Просмотр допроса
+        </h2>
+        <button
+          className="text-2xl text-gray-400 hover:text-gray-600 transition-colors"
+          onClick={onClose}
+        >
           ×
         </button>
       </div>
 
-      <div className="interrogation-details">
-        <div className="detail-row">
-          <label>Название:</label>
-          <div className="detail-value">{interrogation.title}</div>
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row mb-4 pb-4 border-b border-gray-100">
+          <label className="font-bold text-gray-600 w-full sm:w-40 mb-2 sm:mb-0">
+            Название:
+          </label>
+          <div className="flex-1 sm:pl-4">{interrogation.title}</div>
         </div>
 
-        <div className="detail-row">
-          <label>Дата:</label>
-          <div className="detail-value">{formatDate(interrogation.date)}</div>
+        <div className="flex flex-col sm:flex-row mb-4 pb-4 border-b border-gray-100">
+          <label className="font-bold text-gray-600 w-full sm:w-40 mb-2 sm:mb-0">
+            Дата:
+          </label>
+          <div className="flex-1 sm:pl-4">{formatDate(interrogation.date)}</div>
         </div>
 
-        <div className="detail-row">
-          <label>Подозреваемый:</label>
-          <div className="detail-value">{interrogation.suspect}</div>
+        <div className="flex flex-col sm:flex-row mb-4 pb-4 border-b border-gray-100">
+          <label className="font-bold text-gray-600 w-full sm:w-40 mb-2 sm:mb-0">
+            Подозреваемый:
+          </label>
+          <div className="flex-1 sm:pl-4">{interrogation.suspect}</div>
         </div>
 
-        <div className="detail-row">
-          <label>Следователь:</label>
-          <div className="detail-value">{interrogation.officer}</div>
+        <div className="flex flex-col sm:flex-row mb-4 pb-4 border-b border-gray-100">
+          <label className="font-bold text-gray-600 w-full sm:w-40 mb-2 sm:mb-0">
+            Следователь:
+          </label>
+          <div className="flex-1 sm:pl-4">{interrogation.officer}</div>
         </div>
 
-        <div className="detail-row">
-          <label>Расшифровка речи:</label>
-          <div className="detail-value notes">
+        <div className="flex flex-col sm:flex-row mb-4 pb-4 border-b border-gray-100">
+          <label className="font-bold text-gray-600 w-full sm:w-40 mb-2 sm:mb-0">
+            Расшифровка речи:
+          </label>
+          <div className="flex-1 sm:pl-4 whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">
             {interrogation.transcript || "Нет расшифровки"}
           </div>
         </div>
 
-        <div className="audio-section">
-          <div className="audio-section-header">
-            <h3>Аудиозапись</h3>
+        <div className="mt-6 p-4 sm:p-6 bg-gray-50 rounded-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Аудиозапись
+            </h3>
             <button
-              className="refresh-btn-small"
+              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
               onClick={refetchInterrogation}
               title="Обновить аудио"
             >
@@ -779,18 +895,20 @@ function ViewInterrogation({
             </button>
           </div>
           {loadingAudio ? (
-            <div className="loading">Загрузка аудио...</div>
+            <div className="text-center py-4 text-gray-600">
+              Загрузка аудио...
+            </div>
           ) : audioUrl ? (
-            <div className="audio-player">
-              <audio controls src={audioUrl} />
+            <div>
+              <audio controls src={audioUrl} className="w-full mb-2" />
               <button
-                className="play-btn"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
                 onClick={() => {
                   const audioElement = document.querySelector(
-                    ".audio-player audio"
-                  );
+                    "audio"
+                  ) as HTMLAudioElement;
                   if (audioElement) {
-                    (audioElement as HTMLAudioElement).play();
+                    audioElement.play();
                   }
                 }}
               >
@@ -798,20 +916,25 @@ function ViewInterrogation({
               </button>
             </div>
           ) : (
-            <div className="no-audio">Аудиозапись отсутствует</div>
+            <div className="text-center py-4 text-gray-500 italic">
+              Аудиозапись отсутствует
+            </div>
           )}
         </div>
       </div>
 
-      <div className="view-actions">
+      <div className="flex flex-col sm:flex-row justify-center gap-4">
         <button
-          className="secondary-btn"
+          className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleDownloadWord}
           disabled={loadingDocument}
         >
           {loadingDocument ? "Скачивание..." : "Скачать Word"}
         </button>
-        <button className="cancel-btn" onClick={onClose}>
+        <button
+          className="px-6 py-3 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+          onClick={onClose}
+        >
           Закрыть
         </button>
       </div>
@@ -1682,12 +1805,19 @@ ${tempInterrogationData.transcript}
   };
 
   return (
-    <div className="record-interrogation">
-      <h2>Запись нового допроса</h2>
+    <div className="max-w-4xl mx-auto">
+      <h2 className="text-center mb-6 text-2xl sm:text-3xl font-semibold text-gray-800">
+        Запись нового допроса
+      </h2>
 
-      <div className="form-section">
-        <div className="form-group">
-          <label htmlFor="title">Название:</label>
+      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6">
+        <div className="mb-4">
+          <label
+            htmlFor="title"
+            className="block mb-2 font-medium text-gray-700"
+          >
+            Название:
+          </label>
           <input
             id="title"
             type="text"
@@ -1699,12 +1829,18 @@ ${tempInterrogationData.transcript}
               })
             }
             placeholder="Введите название допроса"
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
           />
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="date">Дата:</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label
+              htmlFor="date"
+              className="block mb-2 font-medium text-gray-700"
+            >
+              Дата:
+            </label>
             <input
               id="date"
               type="date"
@@ -1715,11 +1851,17 @@ ${tempInterrogationData.transcript}
                   date: e.target.value,
                 })
               }
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="suspect">Подозреваемый:</label>
+          <div>
+            <label
+              htmlFor="suspect"
+              className="block mb-2 font-medium text-gray-700"
+            >
+              Подозреваемый:
+            </label>
             <input
               id="suspect"
               type="text"
@@ -1731,11 +1873,17 @@ ${tempInterrogationData.transcript}
                 })
               }
               placeholder="Введите имя подозреваемого"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="officer">Следователь:</label>
+          <div>
+            <label
+              htmlFor="officer"
+              className="block mb-2 font-medium text-gray-700"
+            >
+              Следователь:
+            </label>
             <input
               id="officer"
               type="text"
@@ -1747,12 +1895,18 @@ ${tempInterrogationData.transcript}
                 })
               }
               placeholder="Введите имя следователя"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
           </div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="transcript">Расшифровка речи:</label>
+        <div>
+          <label
+            htmlFor="transcript"
+            className="block mb-2 font-medium text-gray-700"
+          >
+            Расшифровка речи:
+          </label>
           <textarea
             id="transcript"
             value={interrogationData.transcript}
@@ -1762,64 +1916,72 @@ ${tempInterrogationData.transcript}
                 transcript: e.target.value,
               })
             }
-            style={{ width: "102%", height: 400 }}
             placeholder="Введите расшифровку речи"
-            rows={4}
+            rows={10}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-y"
           />
         </div>
       </div>
 
-      <div className="recording-section">
-        <h3>Аудиозапись</h3>
+      <div className="bg-gray-50 p-4 sm:p-6 rounded-lg mb-6">
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">
+          Аудиозапись
+        </h3>
 
-        <div className="recording-controls">
+        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
           {!recordingState.isRecording ? (
-            <button className="record-btn" onClick={startRecording}>
+            <button
+              className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-medium"
+              onClick={startRecording}
+            >
               Начать запись
             </button>
           ) : (
-            <div className="recording-active">
-              <button className="stop-btn" onClick={stopRecording}>
+            <div className="flex gap-2">
+              <button
+                className="px-6 py-3 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
+                onClick={stopRecording}
+              >
                 Остановить запись
               </button>
               <button
-                className="restart-btn"
+                className="px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
                 onClick={restartSpeechRecognition}
               >
                 Перезапустить распознавание
               </button>
             </div>
           )}
-          <div className="timer">
+          <div className="font-mono text-xl sm:text-2xl font-bold text-gray-800">
             {formatTime(recordingState.recordingTime)}
           </div>
         </div>
 
         {recordingState.audioUrl && (
-          <div className="audio-preview">
-            <h4>Записанное аудио</h4>
-            <audio controls src={recordingState.audioUrl} />
+          <div className="mt-4 p-4 bg-white rounded">
+            <h4 className="mb-2 font-medium text-gray-800">Записанное аудио</h4>
+            <audio controls src={recordingState.audioUrl} className="w-full" />
           </div>
         )}
       </div>
 
-      <div className="actions">
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <button
-          className="save-btn"
+          className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           onClick={handleSave}
           disabled={recordingState.isRecording}
         >
           Сохранить допрос
         </button>
         <button
-          className="secondary-btn"
+          className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
           onClick={handlePreviewDocument}
           disabled={recordingState.isRecording}
         >
           Предварительный просмотр и скачивание Word
         </button>
         <button
-          className="cancel-btn"
+          className="px-6 py-3 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors font-medium"
           onClick={() =>
             window.dispatchEvent(
               new CustomEvent("showMessage", {
@@ -1845,20 +2007,26 @@ function UserProfile({
   user: { _id: string; username: string; role: string };
 }) {
   return (
-    <div className="profile">
-      <h2>Профиль пользователя</h2>
-      <div className="profile-info">
-        <div className="info-item">
-          <label>ID:</label>
-          <span>{user._id}</span>
+    <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-md">
+      <h2 className="text-center mb-6 text-2xl font-semibold text-gray-800">
+        Профиль пользователя
+      </h2>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-4 border-b border-gray-200">
+          <label className="font-bold text-gray-600 w-full sm:w-40">ID:</label>
+          <span className="flex-1 text-gray-800 break-all">{user._id}</span>
         </div>
-        <div className="info-item">
-          <label>Имя пользователя:</label>
-          <span>{user.username}</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-4 border-b border-gray-200">
+          <label className="font-bold text-gray-600 w-full sm:w-40">
+            Имя пользователя:
+          </label>
+          <span className="flex-1 text-gray-800">{user.username}</span>
         </div>
-        <div className="info-item">
-          <label>Роль:</label>
-          <span>{user.role === "admin" ? "Администратор" : "Следователь"}</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <label className="font-bold text-gray-600 w-full sm:w-40">Роль:</label>
+          <span className="flex-1 text-gray-800">
+            {user.role === "admin" ? "Администратор" : "Следователь"}
+          </span>
         </div>
       </div>
     </div>
@@ -2006,12 +2174,18 @@ function AdminDashboard() {
   };
 
   if (loading) {
-    return <div className="loading">Загрузка пользователей...</div>;
+    return (
+      <div className="text-center py-8 text-gray-600">
+        Загрузка пользователей...
+      </div>
+    );
   }
 
   return (
-    <div className="admin-dashboard">
-      <h2>Панель администратора</h2>
+    <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md">
+      <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-6">
+        Панель администратора
+      </h2>
 
       {showAddUserForm ? (
         <UserForm
@@ -2024,69 +2198,103 @@ function AdminDashboard() {
         />
       ) : (
         <>
-          <div className="admin-section">
-            <div
-              className="section-header"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <h3>Управление пользователями</h3>
-              <button className="add-btn" onClick={handleAddUser}>
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">
+                Управление пользователями
+              </h3>
+              <button
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm sm:text-base"
+                onClick={handleAddUser}
+              >
                 + Добавить пользователя
               </button>
             </div>
 
-            <div className="users-table">
-              <div className="table-header">
-                <div>Имя пользователя</div>
-                <div>Роль</div>
-                <div>Действия</div>
-              </div>
-              {users.map((user) => (
-                <div key={user._id} className="table-row">
-                  <div>{user.username}</div>
-                  <div>
-                    {user.role === "admin" ? "Администратор" : "Следователь"}
-                  </div>
-                  <div>
-                    <button
-                      className="action-btn-small"
-                      onClick={() => handleEditUser(user)}
-                    >
-                      Редактировать
-                    </button>
-                    <button
-                      className="action-btn-small"
-                      onClick={() => handleDeleteUser(user._id)}
-                    >
-                      Удалить
-                    </button>
-                  </div>
+            <div className="overflow-x-auto">
+              <div className="min-w-full">
+                <div className="hidden sm:grid sm:grid-cols-3 bg-gray-100 p-4 font-bold text-gray-700">
+                  <div>Имя пользователя</div>
+                  <div>Роль</div>
+                  <div>Действия</div>
                 </div>
-              ))}
+                {users.map((user) => (
+                  <div
+                    key={user._id}
+                    className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-0 p-4 border-b border-gray-200 last:border-b-0 sm:items-center"
+                  >
+                    <div className="sm:contents">
+                      <span className="sm:hidden font-bold text-gray-600">
+                        Имя пользователя:{" "}
+                      </span>
+                      <div>{user.username}</div>
+                    </div>
+                    <div className="sm:contents">
+                      <span className="sm:hidden font-bold text-gray-600">
+                        Роль:{" "}
+                      </span>
+                      <div>
+                        {user.role === "admin"
+                          ? "Администратор"
+                          : "Следователь"}
+                      </div>
+                    </div>
+                    <div className="sm:contents">
+                      <span className="sm:hidden font-bold text-gray-600">
+                        Действия:{" "}
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          Редактировать
+                        </button>
+                        <button
+                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
+                          onClick={() => handleDeleteUser(user._id)}
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="admin-section">
-            <div className="section-header">
-              <h3>Статистика системы</h3>
+          <div>
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">
+                Статистика системы
+              </h3>
             </div>
 
-            <div className="dashboard-stats">
-              <div className="stat-card">
-                <h3>Всего пользователей</h3>
-                <p>{users.length}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div className="bg-white p-6 rounded-lg shadow-md text-center border border-gray-200">
+                <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
+                  Всего пользователей
+                </h3>
+                <p className="text-3xl sm:text-4xl font-bold text-blue-600">
+                  {users.length}
+                </p>
               </div>
-              <div className="stat-card">
-                <h3>Всего допросов</h3>
-                <p>24</p>
+              <div className="bg-white p-6 rounded-lg shadow-md text-center border border-gray-200">
+                <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
+                  Всего допросов
+                </h3>
+                <p className="text-3xl sm:text-4xl font-bold text-blue-600">
+                  24
+                </p>
               </div>
-              <div className="stat-card">
-                <h3>Активные сессии</h3>
-                <p>3</p>
+              <div className="bg-white p-6 rounded-lg shadow-md text-center border border-gray-200">
+                <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
+                  Активные сессии
+                </h3>
+                <p className="text-3xl sm:text-4xl font-bold text-blue-600">
+                  3
+                </p>
               </div>
             </div>
           </div>
@@ -2115,11 +2323,18 @@ function UserForm({ user, onSave, onCancel }: UserFormProps) {
   };
 
   return (
-    <div className="user-form-container">
-      <h2>{user ? "Редактировать пользователя" : "Добавить пользователя"}</h2>
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="username">Имя пользователя:</label>
+    <div className="max-w-lg mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-md">
+      <h2 className="text-center mb-6 text-xl sm:text-2xl font-semibold text-gray-800">
+        {user ? "Редактировать пользователя" : "Добавить пользователя"}
+      </h2>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <div>
+          <label
+            htmlFor="username"
+            className="block mb-2 font-medium text-gray-700"
+          >
+            Имя пользователя:
+          </label>
           <input
             id="username"
             type="text"
@@ -2127,12 +2342,16 @@ function UserForm({ user, onSave, onCancel }: UserFormProps) {
             onChange={(e) =>
               setUserData({ ...userData, username: e.target.value })
             }
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             required
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="password">
+        <div>
+          <label
+            htmlFor="password"
+            className="block mb-2 font-medium text-gray-700"
+          >
             {user
               ? "Новый пароль (оставьте пустым, чтобы не менять)"
               : "Пароль:"}
@@ -2144,27 +2363,41 @@ function UserForm({ user, onSave, onCancel }: UserFormProps) {
             onChange={(e) =>
               setUserData({ ...userData, password: e.target.value })
             }
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             required={!user}
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="role">Роль:</label>
+        <div>
+          <label
+            htmlFor="role"
+            className="block mb-2 font-medium text-gray-700"
+          >
+            Роль:
+          </label>
           <select
             id="role"
             value={userData.role}
             onChange={(e) => setUserData({ ...userData, role: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer"
           >
             <option value="investigator">Следователь</option>
             <option value="admin">Администратор</option>
           </select>
         </div>
 
-        <div className="form-actions">
-          <button type="submit" className="submit-btn">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+          <button
+            type="submit"
+            className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium"
+          >
             {user ? "Сохранить изменения" : "Создать пользователя"}
           </button>
-          <button type="button" className="cancel-btn" onClick={onCancel}>
+          <button
+            type="button"
+            className="px-6 py-3 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors font-medium"
+            onClick={onCancel}
+          >
             Отмена
           </button>
         </div>
