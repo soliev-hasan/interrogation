@@ -77,7 +77,8 @@ const MessageModal: React.FC<MessageModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fadeIn"
+      style={{ backgroundColor: "#00000099" }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-opacity-30  animate-fadeIn"
       onClick={handleBackdropClick}
     >
       <div
@@ -132,7 +133,12 @@ const MessageModal: React.FC<MessageModalProps> = ({
         <div className="px-6 pb-6">
           <button
             onClick={onClose}
-            className={`w-full py-3 px-6 ${styles.buttonBg} text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 ${styles.borderColor.replace('border-', 'focus:ring-')}`}
+            className={`w-full py-3 px-6 ${
+              styles.buttonBg
+            } text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 ${styles.borderColor.replace(
+              "border-",
+              "focus:ring-"
+            )}`}
           >
             OK
           </button>

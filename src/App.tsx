@@ -353,7 +353,6 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
       setError(null);
 
       const token = localStorage.getItem("token");
-      console.log("Token found:", !!token); // Debug log
 
       if (!token) {
         setError("No authentication token found");
@@ -370,7 +369,6 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
       }
 
       const data = await api.interrogationAPI.getAll(token);
-      console.log("Interrogations data received:", data); // Debug log
 
       // Map _id to id for consistency
       const mappedData = data.map((item: any) => {
@@ -416,7 +414,7 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
 
   const handleViewInterrogation = async (interrogationId: string) => {
     // Debugging: log the ID being passed
-    console.log("Attempting to view interrogation with ID:", interrogationId);
+    //("Attempting to view interrogation with ID:", interrogationId);
 
     // Check if ID is valid
     if (!interrogationId) {
@@ -438,13 +436,12 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
       if (!token) return;
 
       const data = await api.interrogationAPI.getById(interrogationId, token);
-      console.log("Interrogation data fetched:", data);
-      console.log("Interrogation data type:", typeof data);
-      console.log("Interrogation data keys:", Object.keys(data));
+      //("Interrogation data fetched:", data);
+      //("Interrogation data type:", typeof data);
+      //("Interrogation data keys:", Object.keys(data));
 
       // Check if data has _id or id field and ensure it's properly mapped
       const id = data._id || data.id || interrogationId;
-      console.log("Mapped ID:", id);
 
       // Ensure the returned data has the correct id field
       const mappedData = {
@@ -452,7 +449,6 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
         id: id,
       };
 
-      console.log("Mapped data:", mappedData);
       setViewingInterrogation(mappedData);
     } catch (error) {
       console.error("Ошибка при получении допроса:", error);
@@ -614,7 +610,6 @@ function ViewInterrogation({
 
       setLoadingAudio(true);
       const data = await api.interrogationAPI.getById(interrogation.id, token);
-      console.log("Refetched interrogation data:", data);
 
       // Try to extract audio file path from refetched data
       let audioFilePath =
@@ -649,10 +644,8 @@ function ViewInterrogation({
           }
           fullAudioUrl = `http://localhost:3000${formattedPath}`;
         }
-        console.log("Full audio URL constructed from refetch:", fullAudioUrl);
         setAudioUrl(fullAudioUrl);
       } else {
-        console.log("No audio file path found in refetched data");
         setAudioUrl(null);
       }
     } catch (error) {
@@ -664,28 +657,16 @@ function ViewInterrogation({
 
   // Load audio if available
   useEffect(() => {
-    console.log("=== ViewInterrogation Component ===");
-    console.log("Interrogation data received:", interrogation);
-    console.log("Interrogation data type:", typeof interrogation);
-
     // Check if interrogation is a valid object
     if (!interrogation || typeof interrogation !== "object") {
-      console.log("Invalid interrogation data");
       setAudioUrl(null);
       return;
     }
 
     // Log all properties of the interrogation object
     const keys = Object.keys(interrogation);
-    console.log("Interrogation keys:", keys);
 
     // Log all values
-    keys.forEach((key) => {
-      console.log(
-        `interrogation.${key}:`,
-        interrogation[key as keyof typeof interrogation]
-      );
-    });
 
     // Try to find the audio file path in a more comprehensive way
     const findAudioFilePath = (obj: any): string | null => {
@@ -706,10 +687,6 @@ function ViewInterrogation({
       // Check for any property that looks like an audio file path
       for (const key in obj) {
         if (typeof obj[key] === "string" && obj[key].includes("uploads")) {
-          console.log(
-            `Found potential audio file path in property ${key}:`,
-            obj[key]
-          );
           return obj[key];
         }
       }
@@ -719,7 +696,6 @@ function ViewInterrogation({
 
     const loadAudio = async () => {
       const audioFilePath = findAudioFilePath(interrogation);
-      console.log("Detected audio file path:", audioFilePath);
 
       // If we found an audio file path, make sure it's properly formatted
       if (audioFilePath) {
@@ -742,7 +718,6 @@ function ViewInterrogation({
             }
             fullAudioUrl = `http://localhost:3000${formattedPath}`;
           }
-          console.log("Full audio URL constructed:", fullAudioUrl);
           setAudioUrl(fullAudioUrl);
         } catch (error) {
           console.error("Error loading audio:", error);
@@ -750,7 +725,6 @@ function ViewInterrogation({
           setLoadingAudio(false);
         }
       } else {
-        console.log("No audio file path found in interrogation data");
         // Explicitly set audioUrl to null if no audio file path is found
         setAudioUrl(null);
       }
@@ -938,6 +912,7 @@ function ViewInterrogation({
 
 interface RecordingState {
   isRecording: boolean;
+  isPaused: boolean;
   mediaRecorder: MediaRecorder | null;
   audioChunks: Blob[];
   audioUrl: string | null;
@@ -947,6 +922,7 @@ interface RecordingState {
 function RecordInterrogation() {
   const [recordingState, setRecordingState] = useState<RecordingState>({
     isRecording: false,
+    isPaused: false,
     mediaRecorder: null,
     audioChunks: [],
     audioUrl: null,
@@ -979,27 +955,9 @@ function RecordInterrogation() {
     if (!file) return;
 
     try {
-      // Log detailed file information for debugging
-      console.log("Test audio file details:");
-      console.log("  File name:", file.name);
-      console.log("  File size:", file.size);
-      console.log("  File type:", file.type);
-      console.log("  Last modified:", new Date(file.lastModified));
-
       // Create FormData for the transcription request
       const formData = new FormData();
       formData.append("audio", file);
-
-      // Debug FormData contents
-      console.log("Test file FormData entries:");
-      for (const [key, value] of formData.entries()) {
-        console.log(key, value);
-        if (value instanceof File) {
-          console.log(`  File name: ${value.name}`);
-          console.log(`  File size: ${value.size}`);
-          console.log(`  File type: ${value.type}`);
-        }
-      }
 
       // Send request to our backend which will proxy to Python service
       // Get token from localStorage
@@ -1018,7 +976,6 @@ function RecordInterrogation() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Transcription result:", result);
 
         // Update the transcript in the textarea
         setInterrogationData((prev) => ({
@@ -1057,12 +1014,9 @@ function RecordInterrogation() {
 
   const startRecording = async () => {
     try {
-      console.log("Starting recording process...");
-
       // Clear any existing speech recognition reference
       if (recognitionRef.current) {
         try {
-          console.log("Stopping existing speech recognition...");
           recognitionRef.current.stop();
         } catch (e) {
           console.error("Error stopping existing speech recognition:", e);
@@ -1070,9 +1024,7 @@ function RecordInterrogation() {
         recognitionRef.current = null;
       }
 
-      console.log("Requesting microphone access...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("Microphone access granted");
 
       // Check what MIME types are supported by the browser
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -1080,8 +1032,6 @@ function RecordInterrogation() {
         : MediaRecorder.isTypeSupported("audio/webm")
         ? "audio/webm"
         : "audio/ogg";
-
-      console.log("Using MIME type:", mimeType);
 
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       const audioChunks: Blob[] = [];
@@ -1093,7 +1043,6 @@ function RecordInterrogation() {
       };
 
       mediaRecorder.onstop = async () => {
-        console.log("MediaRecorder stopped");
         // Create blob with the correct MIME type
         const audioBlob = new Blob(audioChunks, { type: mimeType });
         const audioUrl = URL.createObjectURL(audioBlob);
@@ -1113,13 +1062,6 @@ function RecordInterrogation() {
               type: mimeType,
             });
 
-            // Log detailed file information for debugging
-            console.log("Audio file details:");
-            console.log("  File name:", audioFile.name);
-            console.log("  File size:", audioFile.size);
-            console.log("  File type:", audioFile.type);
-            console.log("  Last modified:", new Date(audioFile.lastModified));
-
             // Create FormData for the transcription request
             const formData = new FormData();
             formData.append("audio", audioFile);
@@ -1131,7 +1073,6 @@ function RecordInterrogation() {
             const token = localStorage.getItem("token");
 
             if (transcriptionLanguage === "ru") return;
-            console.log("wor");
 
             const response = await fetch(
               "http://localhost:3000/api/audio/transcribe",
@@ -1145,7 +1086,6 @@ function RecordInterrogation() {
             );
             if (response.ok) {
               const result = await response.json();
-              console.log("Transcription result:", result);
 
               // Update the transcript in the textarea
               setInterrogationData((prev) => ({
@@ -1186,13 +1126,11 @@ function RecordInterrogation() {
 
         // Stop all tracks
         stream.getTracks().forEach((track) => {
-          console.log("Stopping track:", track);
           track.stop();
         });
       };
 
       mediaRecorder.start();
-      console.log("MediaRecorder started");
 
       // Start timer
       if (timerIntervalRef.current) {
@@ -1212,7 +1150,6 @@ function RecordInterrogation() {
           (window as any).SpeechRecognition ||
           (window as any).webkitSpeechRecognition;
         if (SpeechRecognition) {
-          console.log("Initializing speech recognition...");
           const recognition = new SpeechRecognition();
           recognition.continuous = true;
           recognition.interimResults = true;
@@ -1224,7 +1161,6 @@ function RecordInterrogation() {
           recognition.interimResults = true;
 
           recognition.onresult = (event: any) => {
-            console.log("Speech recognition result:", event);
             let interimTranscript = "";
             let finalTranscript = "";
 
@@ -1239,10 +1175,6 @@ function RecordInterrogation() {
 
             // Update the transcript in the input field
             if (finalTranscript || interimTranscript) {
-              console.log("Updating transcript:", {
-                finalTranscript,
-                interimTranscript,
-              });
               setInterrogationData((prev) => ({
                 ...prev,
                 transcript: prev.transcript + finalTranscript,
@@ -1253,15 +1185,15 @@ function RecordInterrogation() {
           recognition.onerror = (event: any) => {
             console.error("Speech recognition error:", event.error, event);
             // Show error to user
-            window.dispatchEvent(
-              new CustomEvent("showMessage", {
-                detail: {
-                  title: "Ошибка распознавания речи",
-                  message: `Ошибка: ${event.error}. Распознавание будет перезапущено.`,
-                  type: "error",
-                },
-              })
-            );
+            // window.dispatchEvent(
+            //   new CustomEvent("showMessage", {
+            //     detail: {
+            //       title: "Ошибка распознавания речи",
+            //       message: `Ошибка: ${event.error}. Распознавание будет перезапущено.`,
+            //       type: "error",
+            //     },
+            //   })
+            // );
 
             // Only restart if we're still recording and the error isn't due to manual stop
             if (
@@ -1275,9 +1207,6 @@ function RecordInterrogation() {
                 if (recordingState.isRecording) {
                   if (recognitionRef.current) {
                     try {
-                      console.log(
-                        "Restarting speech recognition after error..."
-                      );
                       recognitionRef.current.start();
                     } catch (e) {
                       console.error("Failed to restart speech recognition:", e);
@@ -1299,7 +1228,6 @@ function RecordInterrogation() {
           };
 
           recognition.onend = () => {
-            console.log("Speech recognition ended");
             // Automatically restart speech recognition if still recording
             // But only if we haven't manually stopped it
             if (recordingState.isRecording) {
@@ -1308,9 +1236,7 @@ function RecordInterrogation() {
                 if (recordingState.isRecording) {
                   if (recognitionRef.current) {
                     try {
-                      console.log("Restarting speech recognition after end...");
                       recognitionRef.current.start();
-                      console.log("Speech recognition restarted");
                     } catch (e) {
                       console.error("Failed to restart speech recognition:", e);
                       window.dispatchEvent(
@@ -1331,7 +1257,6 @@ function RecordInterrogation() {
           };
 
           recognition.onstart = () => {
-            console.log("Speech recognition started");
             // Show a subtle notification that speech recognition is working
             window.dispatchEvent(
               new CustomEvent("showMessage", {
@@ -1347,7 +1272,6 @@ function RecordInterrogation() {
 
           recognition.start();
           recognitionRef.current = recognition;
-          console.log("Speech recognition initialized");
         } else {
           console.warn("Web Speech API is not supported in this browser");
           window.dispatchEvent(
@@ -1362,9 +1286,6 @@ function RecordInterrogation() {
           );
         }
       } else {
-        console.log(
-          "Tajik language selected - skipping real-time speech recognition"
-        );
         // For Tajik language, we'll rely on backend transcription only
         window.dispatchEvent(
           new CustomEvent("showMessage", {
@@ -1379,12 +1300,12 @@ function RecordInterrogation() {
 
       setRecordingState({
         isRecording: true,
+        isPaused: false,
         mediaRecorder,
         audioChunks: [],
         audioUrl: null,
         recordingTime: 0,
       });
-      console.log("Recording state set to true");
 
       // Add periodic health check for speech recognition
       const healthCheckInterval = setInterval(() => {
@@ -1393,7 +1314,6 @@ function RecordInterrogation() {
           if (recognitionRef.current) {
             // Note: There's no direct way to check if SpeechRecognition is actively listening
             // So we'll just log that the health check is running
-            console.log("Health check: Speech recognition monitoring active");
           } else if (transcriptionLanguage === "ru") {
             // Only recreate speech recognition for Russian language
             const SpeechRecognition =
@@ -1402,9 +1322,7 @@ function RecordInterrogation() {
 
             if (SpeechRecognition) {
               // If we lost the reference but should have speech recognition, try to recreate it
-              console.log(
-                "Health check: Attempting to recreate speech recognition"
-              );
+
               try {
                 const recognition = new SpeechRecognition();
                 recognition.continuous = true;
@@ -1415,10 +1333,6 @@ function RecordInterrogation() {
 
                 // Reattach event handlers
                 recognition.onresult = (event: any) => {
-                  console.log(
-                    "Speech recognition result (from recreated):",
-                    event
-                  );
                   let interimTranscript = "";
                   let finalTranscript = "";
 
@@ -1436,10 +1350,6 @@ function RecordInterrogation() {
                   }
 
                   if (finalTranscript || interimTranscript) {
-                    console.log("Updating transcript (from recreated):", {
-                      finalTranscript,
-                      interimTranscript,
-                    });
                     setInterrogationData((prev) => ({
                       ...prev,
                       transcript: prev.transcript + finalTranscript,
@@ -1455,17 +1365,8 @@ function RecordInterrogation() {
                   );
                 };
 
-                recognition.onend = () => {
-                  console.log("Speech recognition ended (from recreated)");
-                };
-
-                recognition.onstart = () => {
-                  console.log("Speech recognition started (from recreated)");
-                };
-
                 recognition.start();
                 recognitionRef.current = recognition;
-                console.log("Speech recognition recreated and started");
               } catch (e) {
                 console.error("Failed to recreate speech recognition:", e);
               }
@@ -1503,7 +1404,6 @@ function RecordInterrogation() {
       if ((window as any).speechHealthCheckInterval) {
         clearInterval((window as any).speechHealthCheckInterval);
         (window as any).speechHealthCheckInterval = null;
-        console.log("Speech health check interval cleared");
       }
 
       // Stop speech recognition
@@ -1519,6 +1419,7 @@ function RecordInterrogation() {
       setRecordingState((prev) => ({
         ...prev,
         isRecording: false,
+        isPaused: false,
       }));
 
       // Show success message
@@ -1531,6 +1432,113 @@ function RecordInterrogation() {
           },
         })
       );
+    }
+  };
+
+  const pauseRecording = () => {
+    if (
+      recordingState.mediaRecorder &&
+      recordingState.isRecording &&
+      !recordingState.isPaused
+    ) {
+      recordingState.mediaRecorder.pause();
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+
+      // Pause speech recognition
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.error("Error pausing speech recognition:", e);
+        }
+      }
+
+      setRecordingState((prev) => ({
+        ...prev,
+        isPaused: true,
+      }));
+
+      // Show success message
+    }
+  };
+
+  const resumeRecording = () => {
+    if (
+      recordingState.mediaRecorder &&
+      recordingState.isRecording &&
+      recordingState.isPaused
+    ) {
+      recordingState.mediaRecorder.resume();
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingState((prev) => ({
+          ...prev,
+          recordingTime: prev.recordingTime + 1,
+        }));
+      }, 1000);
+
+      // Resume speech recognition if language is Russian
+      if (transcriptionLanguage === "ru") {
+        const SpeechRecognition =
+          (window as any).SpeechRecognition ||
+          (window as any).webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          try {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = "ru-RU";
+
+            recognition.onresult = (event: any) => {
+              let interimTranscript = "";
+              let finalTranscript = "";
+
+              for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                  finalTranscript += transcript + " ";
+                } else {
+                  interimTranscript += transcript;
+                }
+              }
+
+              setInterrogationData((prev) => ({
+                ...prev,
+                transcript: prev.transcript + finalTranscript,
+              }));
+            };
+
+            recognition.onerror = (event: any) => {
+              console.error("Speech recognition error:", event.error);
+            };
+
+            recognition.onend = () => {
+              // Restart recognition if still recording
+              if (recordingState.isRecording && !recordingState.isPaused) {
+                try {
+                  recognition.start();
+                } catch (e) {
+                  console.error("Error restarting speech recognition:", e);
+                }
+              }
+            };
+
+            recognition.start();
+            recognitionRef.current = recognition;
+          } catch (error) {
+            console.error("Error initializing speech recognition:", error);
+          }
+        }
+      }
+
+      setRecordingState((prev) => ({
+        ...prev,
+        isPaused: false,
+      }));
+
+      // Show success message
     }
   };
 
@@ -1681,12 +1689,6 @@ ${tempInterrogationData.transcript}
       if (!token) return;
 
       // Create the interrogation first
-      console.log("Creating interrogation with data:", {
-        title: interrogationData.title,
-        date: interrogationData.date,
-        suspect: interrogationData.suspect,
-        officer: interrogationData.officer,
-      });
 
       const interrogationResponse = await api.interrogationAPI.create(
         {
@@ -1699,16 +1701,12 @@ ${tempInterrogationData.transcript}
         token
       );
 
-      console.log("Interrogation creation response:", interrogationResponse);
-
       // Validate that we received a proper response with an ID
       if (!interrogationResponse || !interrogationResponse.id) {
         throw new Error(
           "Failed to create interrogation or missing ID in response"
         );
       }
-
-      console.log("Created interrogation:", interrogationResponse);
 
       // If we have audio, transcribe it and then upload it
       let transcript = interrogationData.transcript;
@@ -1729,10 +1727,8 @@ ${tempInterrogationData.transcript}
             audioFile,
             "ru-RU"
           );
-          console.log("Transcription response:", transcriptionResponse);
           transcript = transcriptionResponse.transcription || transcript;
         } catch (transcriptionError) {
-          console.error("Error transcribing audio:", transcriptionError);
           // If transcription fails, we'll use the manual transcript from the frontend
         }
 
@@ -1749,7 +1745,6 @@ ${tempInterrogationData.transcript}
           transcript, // Pass the actual transcript (either transcribed or manual)
           token
         );
-        console.log("Audio upload response:", audioResponse);
 
         // Extract transcript and audio file path from response
         transcript =
@@ -1760,15 +1755,8 @@ ${tempInterrogationData.transcript}
           audioResponse.path ||
           "";
 
-        console.log("Extracted transcript:", transcript);
-        console.log("Extracted audio file path:", audioFilePath);
-
         // Use the updated interrogation from the audio response if available
         if (audioResponse.interrogation) {
-          console.log(
-            "Using updated interrogation from audio response:",
-            audioResponse.interrogation
-          );
           // We don't need to make a separate update call since the audio upload already updated the interrogation
         } else {
           // Update the interrogation with the transcript and audio file path
@@ -1777,7 +1765,6 @@ ${tempInterrogationData.transcript}
             { transcript, audioFilePath },
             token
           );
-          console.log("Interrogation update response:", updateResponse);
         }
       }
 
@@ -1787,18 +1774,10 @@ ${tempInterrogationData.transcript}
         throw new Error("Invalid interrogation response or missing ID");
       }
 
-      console.log(
-        "Generating document for interrogation ID:",
-        interrogationResponse.id
-      );
-
       const wordResponse = await api.documentAPI.generate(
         interrogationResponse.id,
         token
       );
-
-      console.log("Document generation response:", wordResponse);
-      console.log("Word document generation response:", wordResponse);
 
       // Update the interrogation with the Word document path
       // Validate that we have a valid interrogation ID and document path
@@ -1929,7 +1908,6 @@ ${tempInterrogationData.transcript}
       recognition.maxAlternatives = 1;
 
       recognition.onresult = (event: any) => {
-        console.log("Speech recognition result (manual restart):", event);
         let interimTranscript = "";
         let finalTranscript = "";
 
@@ -1943,10 +1921,6 @@ ${tempInterrogationData.transcript}
         }
 
         if (finalTranscript || interimTranscript) {
-          console.log("Updating transcript (manual restart):", {
-            finalTranscript,
-            interimTranscript,
-          });
           setInterrogationData((prev) => ({
             ...prev,
             transcript: prev.transcript + finalTranscript,
@@ -1960,28 +1934,24 @@ ${tempInterrogationData.transcript}
           event.error,
           event
         );
-        window.dispatchEvent(
-          new CustomEvent("showMessage", {
-            detail: {
-              title: "Ошибка распознавания речи",
-              message: `Ошибка: ${event.error}`,
-              type: "error",
-            },
-          })
-        );
+        // window.dispatchEvent(
+        //   new CustomEvent("showMessage", {
+        //     detail: {
+        //       title: "Ошибка распознавания речи",
+        //       message: `Ошибка: ${event.error}`,
+        //       type: "error",
+        //     },
+        //   })
+        // );
       };
 
       recognition.onend = () => {
-        console.log("Speech recognition ended (manual restart)");
         // Try to restart automatically
         if (recordingState.isRecording) {
           setTimeout(() => {
             if (recordingState.isRecording && recognitionRef.current) {
               try {
                 recognitionRef.current.start();
-                console.log(
-                  "Speech recognition automatically restarted after manual restart"
-                );
               } catch (e) {
                 console.error(
                   "Failed to automatically restart speech recognition:",
@@ -1994,7 +1964,6 @@ ${tempInterrogationData.transcript}
       };
 
       recognition.onstart = () => {
-        console.log("Speech recognition started (manual restart)");
         window.dispatchEvent(
           new CustomEvent("showMessage", {
             detail: {
@@ -2008,7 +1977,6 @@ ${tempInterrogationData.transcript}
 
       recognition.start();
       recognitionRef.current = recognition;
-      console.log("Speech recognition manually restarted");
     } catch (e) {
       console.error("Failed to manually restart speech recognition:", e);
       window.dispatchEvent(
@@ -2177,6 +2145,21 @@ ${tempInterrogationData.transcript}
             </button>
           ) : (
             <div className="flex gap-2">
+              {recordingState.isPaused ? (
+                <button
+                  className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium"
+                  onClick={resumeRecording}
+                >
+                  Продолжить запись
+                </button>
+              ) : (
+                <button
+                  className="px-6 py-3 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors font-medium"
+                  onClick={pauseRecording}
+                >
+                  Пауза
+                </button>
+              )}
               <button
                 className="px-6 py-3 bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
                 onClick={stopRecording}
@@ -2252,7 +2235,6 @@ function UserProfile({
       </h2>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-4 border-b border-gray-200">
-          <label className="font-bold text-gray-600 w-full sm:w-40">ID:</label>
           <span className="flex-1 text-gray-800 break-all">{user._id}</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-4 border-b border-gray-200">
@@ -2357,8 +2339,6 @@ function AdminDashboard() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      console.log("Sending user data:", userData);
-
       if (editingUser) {
         // Update existing user
         const updatedUser = await api.adminAPI.updateUser(
@@ -2382,9 +2362,7 @@ function AdminDashboard() {
         );
       } else {
         // Create new user
-        console.log("Creating new user with token:", token);
         const newUser = await api.adminAPI.createUser(userData, token);
-        console.log("New user created:", newUser);
         setUsers([...users, newUser]);
         window.dispatchEvent(
           new CustomEvent("showMessage", {
