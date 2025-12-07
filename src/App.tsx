@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import * as api from "./services/api";
 import MessageModal from "./components/MessageModal";
+import LoadingSpinner from "./components/LoadingSpinner";
 
 // Add this interface for interrogation data
 interface InterrogationData {
@@ -115,10 +116,32 @@ function App() {
   // Login function using API
   const handleLogin = async (username: string, password: string) => {
     try {
+      // Show loading indicator
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Вход в систему",
+            message: "Выполняется вход... Пожалуйста, подождите.",
+            type: "info",
+          },
+        })
+      );
+
       const response = await api.authAPI.login(username, password);
       localStorage.setItem("token", response.token);
       setUser(response.user);
       setActiveView("dashboard");
+
+      // Show success message
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Успешный вход",
+            message: "Вы успешно вошли в систему!",
+            type: "success",
+          },
+        })
+      );
     } catch (error) {
       console.error("Ошибка входа:", error);
       window.dispatchEvent(
@@ -142,7 +165,11 @@ function App() {
 
   // Show loading state while checking session
   if (loading) {
-    return <div className="text-center py-8 text-gray-600">Загрузка...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner message="Загрузка приложения..." size="lg" />
+      </div>
+    );
   }
 
   return (
@@ -941,8 +968,8 @@ function RecordInterrogation() {
     transcript: "",
   });
 
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
   // Add state for language selection
   const [transcriptionLanguage, setTranscriptionLanguage] = useState<
     "ru" | "tg"
@@ -955,6 +982,17 @@ function RecordInterrogation() {
     if (!file) return;
 
     try {
+      // Show loading message
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Транскрипция аудио",
+            message: "Выполняется транскрипция аудио... Пожалуйста, подождите.",
+            type: "info",
+          },
+        })
+      );
+
       // Create FormData for the transcription request
       const formData = new FormData();
       formData.append("audio", file);
@@ -1056,6 +1094,9 @@ function RecordInterrogation() {
         // Automatically transcribe the audio when recording stops
         if (audioChunks.length > 0) {
           try {
+            // Show loading spinner for transcription
+            setIsTranscribing(true);
+
             // Create a File object with the correct extension based on MIME type
             const extension = mimeType.includes("webm") ? ".webm" : ".ogg";
             const audioFile = new File([audioBlob], `recording${extension}`, {
@@ -1093,6 +1134,9 @@ function RecordInterrogation() {
                 transcript: result.transcription || prev.transcript,
               }));
 
+              // Hide loading spinner
+              setIsTranscribing(false);
+
               // Show success message
               window.dispatchEvent(
                 new CustomEvent("showMessage", {
@@ -1108,10 +1152,14 @@ function RecordInterrogation() {
             } else {
               const errorText = await response.text();
               console.error("Transcription service error:", errorText);
+              // Hide loading spinner
+              setIsTranscribing(false);
               throw new Error(`Transcription failed: ${errorText}`);
             }
           } catch (error) {
             console.error("Transcription error:", error);
+            // Hide loading spinner
+            setIsTranscribing(false);
             window.dispatchEvent(
               new CustomEvent("showMessage", {
                 detail: {
@@ -1592,16 +1640,7 @@ function RecordInterrogation() {
         return;
       }
 
-      // Create a temporary interrogation object for document generation
-      const tempInterrogationData = {
-        ...interrogationData,
-        transcript: interrogationData.transcript,
-      };
-
-      // In a real implementation, you would send this data to the backend to generate
-      // a temporary document. For now, we'll simulate the process.
-
-      // Show a message that the document is being generated
+      // Show loading message
       window.dispatchEvent(
         new CustomEvent("showMessage", {
           detail: {
@@ -1611,6 +1650,15 @@ function RecordInterrogation() {
           },
         })
       );
+
+      // Create a temporary interrogation object for document generation
+      const tempInterrogationData = {
+        ...interrogationData,
+        transcript: interrogationData.transcript,
+      };
+
+      // In a real implementation, you would send this data to the backend to generate
+      // a temporary document. For now, we'll simulate the process.
 
       // Simulate document generation delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -1688,6 +1736,17 @@ ${tempInterrogationData.transcript}
       const token = localStorage.getItem("token");
       if (!token) return;
 
+      // Show loading message
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Сохранение допроса",
+            message: "Создание допроса... Пожалуйста, подождите.",
+            type: "info",
+          },
+        })
+      );
+
       // Create the interrogation first
 
       const interrogationResponse = await api.interrogationAPI.create(
@@ -1721,6 +1780,18 @@ ${tempInterrogationData.transcript}
           { type: "audio/wav" }
         );
 
+        // Show loading message for transcription
+        window.dispatchEvent(
+          new CustomEvent("showMessage", {
+            detail: {
+              title: "Транскрипция аудио",
+              message:
+                "Выполняется транскрипция аудио... Пожалуйста, подождите.",
+              type: "info",
+            },
+          })
+        );
+
         // Transcribe the audio using our new Python service
         try {
           const transcriptionResponse = await api.audioAPI.transcribe(
@@ -1738,6 +1809,17 @@ ${tempInterrogationData.transcript}
             "Invalid interrogation response or missing ID for audio upload"
           );
         }
+
+        // Show loading message for audio upload
+        window.dispatchEvent(
+          new CustomEvent("showMessage", {
+            detail: {
+              title: "Загрузка аудио",
+              message: "Загрузка аудиофайла... Пожалуйста, подождите.",
+              type: "info",
+            },
+          })
+        );
 
         const audioResponse = await api.audioAPI.upload(
           interrogationResponse.id,
@@ -1773,6 +1855,17 @@ ${tempInterrogationData.transcript}
       if (!interrogationResponse || !interrogationResponse.id) {
         throw new Error("Invalid interrogation response or missing ID");
       }
+
+      // Show loading message for document generation
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Генерация документа",
+            message: "Создание документа Word... Пожалуйста, подождите.",
+            type: "info",
+          },
+        })
+      );
 
       const wordResponse = await api.documentAPI.generate(
         interrogationResponse.id,
@@ -2188,20 +2281,26 @@ ${tempInterrogationData.transcript}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <button
-          className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-          onClick={handleSave}
-          disabled={recordingState.isRecording}
-        >
-          Сохранить допрос
-        </button>
-        <button
-          className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-          onClick={handlePreviewDocument}
-          disabled={recordingState.isRecording}
-        >
-          Предварительный просмотр и скачивание Word
-        </button>
+        {isSaving ? (
+          <LoadingSpinner message="Сохранение допроса..." />
+        ) : (
+          <>
+            <button
+              className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              onClick={handleSave}
+              disabled={recordingState.isRecording}
+            >
+              Сохранить допрос
+            </button>
+            <button
+              className="px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              onClick={handlePreviewDocument}
+              disabled={recordingState.isRecording}
+            >
+              Предварительный просмотр и скачивание Word
+            </button>
+          </>
+        )}
         <button
           className="px-6 py-3 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors font-medium"
           onClick={() =>
