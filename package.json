@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "install": "^0.13.0",
+    "audio-recorder-polyfill": "^0.4.1",
+    "lamejs": "^1.2.1",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-mp3-recorder": "^1.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

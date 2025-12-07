@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import torch
 import torchaudio
@@ -9,6 +10,15 @@ import soundfile as sf
 import numpy as np
 
 app = FastAPI(title="Speech to Text API")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5174", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load model and processor
 MODEL_ID = "re-skill/whisper-large-v3-turbo-tj"
@@ -112,9 +122,11 @@ async def transcribe_audio(
                 
                 # Generate transcription for this chunk
                 with torch.no_grad():
+                    # Ensure max_length is always an integer
+                    actual_max_length = 448 if max_length is None else min(max_length, 448)
                     chunk_generated_ids = model.generate(
                         chunk_inputs["input_features"],
-                        max_length=448 if max_length is None else min(max_length, 448)
+                        max_length=actual_max_length
                     )
                 
                 # Decode chunk transcription
@@ -133,12 +145,11 @@ async def transcribe_audio(
                 }
                 
                 # Set max_length if provided, otherwise use max safe limit
-                if max_length:
-                    if max_length > 448:
-                        max_length = 448
-                    generate_kwargs["max_length"] = max_length
+                if max_length is not None:
+                    actual_max_length = min(max_length, 448)
                 else:
-                    generate_kwargs["max_length"] = 448
+                    actual_max_length = 448
+                generate_kwargs["max_length"] = actual_max_length
                 
                 generated_ids = model.generate(**generate_kwargs)
                 
@@ -219,6 +230,10 @@ async def transcribe_audio(
         except Exception as e:
             # If language detection fails, default to "auto-detected"
             detected_language = "auto-detected"
+        
+        # If we still couldn't detect the language, default to Russian for this application
+        if detected_language == "auto-detected" or detected_language == "unknown":
+            detected_language = "ru"
         
         response = {
             "transcription": full_transcription,

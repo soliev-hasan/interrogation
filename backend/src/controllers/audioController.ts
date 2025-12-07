@@ -2,6 +2,25 @@ import { Request, Response } from "express";
 import { upload } from "../utils/fileUpload";
 import Interrogation from "../models/InterrogationModel";
 import path from "path";
+import fetch from "node-fetch";
+import FormData from "form-data";
+import fs from "fs";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegStatic from "ffmpeg-static";
+
+// Set ffmpeg path
+ffmpeg.setFfmpegPath(ffmpegStatic as string);
+
+// Function to convert audio file to MP3
+const convertToMp3 = (inputPath: string, outputPath: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .toFormat("mp3")
+      .on("end", () => resolve())
+      .on("error", (err) => reject(err))
+      .save(outputPath);
+  });
+};
 
 // Handle audio file upload
 export const uploadAudio = async (
@@ -77,6 +96,93 @@ export const getAudio = async (req: Request, res: Response): Promise<void> => {
     res.sendFile(filePath);
   } catch (error) {
     console.error("Get audio error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Transcribe audio using Python service
+export const transcribeAudio = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+
+    // Convert the file to MP3 format
+    const mp3FilePath = req.file.path + ".mp3";
+    await convertToMp3(req.file.path, mp3FilePath);
+
+    // Forward the request to Python service
+    const pythonServiceUrl = "http://localhost:8000/transcribe";
+
+    // Create form data to forward to Python service with MP3 file
+    const form = new FormData();
+    form.append("audio", fs.createReadStream(mp3FilePath), {
+      filename: req.file.originalname.replace(
+        path.extname(req.file.originalname),
+        ".mp3"
+      ),
+      contentType: "audio/mp3",
+    });
+
+    // Log file information for debugging
+    console.log("Forwarding file to Python service:");
+    console.log("  Original name:", req.file.originalname);
+    console.log(
+      "  Converted to MP3 name:",
+      req.file.originalname.replace(path.extname(req.file.originalname), ".mp3")
+    );
+    console.log("  MIME type:", "audio/mp3");
+    console.log("  File path:", mp3FilePath);
+    console.log("  File size:", fs.statSync(mp3FilePath).size);
+
+    // Add max_length if provided
+    if (req.body.max_length) {
+      form.append("max_length", req.body.max_length);
+    }
+
+    // Make request to Python service
+    const response = await fetch(pythonServiceUrl, {
+      method: "POST",
+      // @ts-ignore
+      body: form,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Python service error:", errorText);
+
+      // Try to parse as JSON if possible
+      try {
+        const errorJson = JSON.parse(errorText);
+        res.status(response.status).json({
+          message: `Transcription service error: ${
+            errorJson.detail || errorText
+          }`,
+        });
+      } catch (parseError) {
+        res.status(response.status).json({
+          message: `Transcription service error: ${errorText}`,
+        });
+      }
+      return;
+    }
+
+    const result = await response.json();
+
+    // Clean up the temporary MP3 file
+    try {
+      fs.unlinkSync(mp3FilePath);
+    } catch (cleanupError) {
+      console.warn("Failed to clean up temporary MP3 file:", cleanupError);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Transcription error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

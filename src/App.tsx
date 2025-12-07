@@ -142,9 +142,7 @@ function App() {
 
   // Show loading state while checking session
   if (loading) {
-    return (
-      <div className="text-center py-8 text-gray-600">Загрузка...</div>
-    );
+    return <div className="text-center py-8 text-gray-600">Загрузка...</div>;
   }
 
   return (
@@ -554,9 +552,7 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
                   </span>
                   <div>
                     {interrogation.date
-                      ? new Date(interrogation.date).toLocaleDateString(
-                          "ru-RU"
-                        )
+                      ? new Date(interrogation.date).toLocaleDateString("ru-RU")
                       : "Нет даты"}
                   </div>
                 </div>
@@ -883,9 +879,7 @@ function ViewInterrogation({
 
         <div className="mt-6 p-4 sm:p-6 bg-gray-50 rounded-lg">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Аудиозапись
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-800">Аудиозапись</h3>
             <button
               className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
               onClick={refetchInterrogation}
@@ -973,6 +967,94 @@ function RecordInterrogation() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Add state for language selection
+  const [transcriptionLanguage, setTranscriptionLanguage] = useState<
+    "ru" | "tg"
+  >("ru");
+
+  const handleTestFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      // Log detailed file information for debugging
+      console.log("Test audio file details:");
+      console.log("  File name:", file.name);
+      console.log("  File size:", file.size);
+      console.log("  File type:", file.type);
+      console.log("  Last modified:", new Date(file.lastModified));
+
+      // Create FormData for the transcription request
+      const formData = new FormData();
+      formData.append("audio", file);
+
+      // Debug FormData contents
+      console.log("Test file FormData entries:");
+      for (const [key, value] of formData.entries()) {
+        console.log(key, value);
+        if (value instanceof File) {
+          console.log(`  File name: ${value.name}`);
+          console.log(`  File size: ${value.size}`);
+          console.log(`  File type: ${value.type}`);
+        }
+      }
+
+      // Send request to our backend which will proxy to Python service
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        "http://localhost:3000/api/audio/transcribe",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Transcription result:", result);
+
+        // Update the transcript in the textarea
+        setInterrogationData((prev) => ({
+          ...prev,
+          transcript: result.transcription || prev.transcript,
+        }));
+
+        // Show success message
+        window.dispatchEvent(
+          new CustomEvent("showMessage", {
+            detail: {
+              title: "Транскрипция завершена",
+              message: `Аудио успешно транскрибировано. Язык: ${
+                transcriptionLanguage == "tg" ? "Таджикский" : "Русский"
+              }`,
+              type: "success",
+            },
+          })
+        );
+      } else {
+        throw new Error("Transcription failed");
+      }
+    } catch (error) {
+      console.error("Transcription error:", error);
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Ошибка транскрипции",
+            message: "Не удалось транскрибировать аудио",
+            type: "error",
+          },
+        })
+      );
+    }
+  };
+
   const startRecording = async () => {
     try {
       console.log("Starting recording process...");
@@ -992,7 +1074,16 @@ function RecordInterrogation() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log("Microphone access granted");
 
-      const mediaRecorder = new MediaRecorder(stream);
+      // Check what MIME types are supported by the browser
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/ogg";
+
+      console.log("Using MIME type:", mimeType);
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       const audioChunks: Blob[] = [];
 
       mediaRecorder.ondataavailable = (event) => {
@@ -1001,9 +1092,10 @@ function RecordInterrogation() {
         }
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         console.log("MediaRecorder stopped");
-        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        // Create blob with the correct MIME type
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
         const audioUrl = URL.createObjectURL(audioBlob);
 
         setRecordingState((prev) => ({
@@ -1011,6 +1103,86 @@ function RecordInterrogation() {
           audioChunks,
           audioUrl,
         }));
+
+        // Automatically transcribe the audio when recording stops
+        if (audioChunks.length > 0) {
+          try {
+            // Create a File object with the correct extension based on MIME type
+            const extension = mimeType.includes("webm") ? ".webm" : ".ogg";
+            const audioFile = new File([audioBlob], `recording${extension}`, {
+              type: mimeType,
+            });
+
+            // Log detailed file information for debugging
+            console.log("Audio file details:");
+            console.log("  File name:", audioFile.name);
+            console.log("  File size:", audioFile.size);
+            console.log("  File type:", audioFile.type);
+            console.log("  Last modified:", new Date(audioFile.lastModified));
+
+            // Create FormData for the transcription request
+            const formData = new FormData();
+            formData.append("audio", audioFile);
+            // For Tajik language, we don't need to set max_length as the Python service handles None correctly
+            // For Russian language, we also don't need to set max_length
+
+            // For both languages, send request to our backend which will proxy to Python service
+            // Get token from localStorage
+            const token = localStorage.getItem("token");
+
+            if (transcriptionLanguage === "ru") return;
+            console.log("wor");
+
+            const response = await fetch(
+              "http://localhost:3000/api/audio/transcribe",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+              }
+            );
+            if (response.ok) {
+              const result = await response.json();
+              console.log("Transcription result:", result);
+
+              // Update the transcript in the textarea
+              setInterrogationData((prev) => ({
+                ...prev,
+                transcript: result.transcription || prev.transcript,
+              }));
+
+              // Show success message
+              window.dispatchEvent(
+                new CustomEvent("showMessage", {
+                  detail: {
+                    title: "Транскрипция завершена",
+                    message: `Аудио успешно транскрибировано. Язык: ${
+                      transcriptionLanguage == "tg" ? "Таджикский" : "Русский"
+                    }`,
+                    type: "success",
+                  },
+                })
+              );
+            } else {
+              const errorText = await response.text();
+              console.error("Transcription service error:", errorText);
+              throw new Error(`Transcription failed: ${errorText}`);
+            }
+          } catch (error) {
+            console.error("Transcription error:", error);
+            window.dispatchEvent(
+              new CustomEvent("showMessage", {
+                detail: {
+                  title: "Ошибка транскрипции",
+                  message: "Не удалось транскрибировать аудио",
+                  type: "error",
+                },
+              })
+            );
+          }
+        }
 
         // Stop all tracks
         stream.getTracks().forEach((track) => {
@@ -1033,152 +1205,172 @@ function RecordInterrogation() {
         }));
       }, 1000);
 
-      // Start speech recognition if available
-      const SpeechRecognition =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        console.log("Initializing speech recognition...");
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "ru-RU"; // Russian language
+      // Start speech recognition if available and language is Russian
+      // For Tajik language, we don't use real-time speech recognition
+      if (transcriptionLanguage === "ru") {
+        const SpeechRecognition =
+          (window as any).SpeechRecognition ||
+          (window as any).webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          console.log("Initializing speech recognition...");
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          // Set language to Russian
+          recognition.lang = "ru-RU";
 
-        // Add settings to improve recognition
-        recognition.maxAlternatives = 1;
-        recognition.interimResults = true;
+          // Add settings to improve recognition
+          recognition.maxAlternatives = 1;
+          recognition.interimResults = true;
 
-        recognition.onresult = (event: any) => {
-          console.log("Speech recognition result:", event);
-          let interimTranscript = "";
-          let finalTranscript = "";
+          recognition.onresult = (event: any) => {
+            console.log("Speech recognition result:", event);
+            let interimTranscript = "";
+            let finalTranscript = "";
 
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += transcript + " ";
-            } else {
-              interimTranscript += transcript;
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                finalTranscript += transcript + " ";
+              } else {
+                interimTranscript += transcript;
+              }
             }
-          }
 
-          // Update the transcript in the input field
-          if (finalTranscript || interimTranscript) {
-            console.log("Updating transcript:", {
-              finalTranscript,
-              interimTranscript,
-            });
-            setInterrogationData((prev) => ({
-              ...prev,
-              transcript: prev.transcript + finalTranscript,
-            }));
-          }
-        };
+            // Update the transcript in the input field
+            if (finalTranscript || interimTranscript) {
+              console.log("Updating transcript:", {
+                finalTranscript,
+                interimTranscript,
+              });
+              setInterrogationData((prev) => ({
+                ...prev,
+                transcript: prev.transcript + finalTranscript,
+              }));
+            }
+          };
 
-        recognition.onerror = (event: any) => {
-          console.error("Speech recognition error:", event.error, event);
-          // Show error to user
+          recognition.onerror = (event: any) => {
+            console.error("Speech recognition error:", event.error, event);
+            // Show error to user
+            window.dispatchEvent(
+              new CustomEvent("showMessage", {
+                detail: {
+                  title: "Ошибка распознавания речи",
+                  message: `Ошибка: ${event.error}. Распознавание будет перезапущено.`,
+                  type: "error",
+                },
+              })
+            );
+
+            // Only restart if we're still recording and the error isn't due to manual stop
+            if (
+              recordingState.isRecording &&
+              event.error !== "no-speech" &&
+              event.error !== "aborted" &&
+              event.error !== "not-allowed"
+            ) {
+              setTimeout(() => {
+                // Double-check that we're still recording
+                if (recordingState.isRecording) {
+                  if (recognitionRef.current) {
+                    try {
+                      console.log(
+                        "Restarting speech recognition after error..."
+                      );
+                      recognitionRef.current.start();
+                    } catch (e) {
+                      console.error("Failed to restart speech recognition:", e);
+                      window.dispatchEvent(
+                        new CustomEvent("showMessage", {
+                          detail: {
+                            title: "Ошибка",
+                            message:
+                              "Не удалось перезапустить распознавание речи",
+                            type: "error",
+                          },
+                        })
+                      );
+                    }
+                  }
+                }
+              }, 300);
+            }
+          };
+
+          recognition.onend = () => {
+            console.log("Speech recognition ended");
+            // Automatically restart speech recognition if still recording
+            // But only if we haven't manually stopped it
+            if (recordingState.isRecording) {
+              setTimeout(() => {
+                // Double-check that we're still recording
+                if (recordingState.isRecording) {
+                  if (recognitionRef.current) {
+                    try {
+                      console.log("Restarting speech recognition after end...");
+                      recognitionRef.current.start();
+                      console.log("Speech recognition restarted");
+                    } catch (e) {
+                      console.error("Failed to restart speech recognition:", e);
+                      window.dispatchEvent(
+                        new CustomEvent("showMessage", {
+                          detail: {
+                            title: "Ошибка",
+                            message:
+                              "Не удалось перезапустить распознавание речи",
+                            type: "error",
+                          },
+                        })
+                      );
+                    }
+                  }
+                }
+              }, 300);
+            }
+          };
+
+          recognition.onstart = () => {
+            console.log("Speech recognition started");
+            // Show a subtle notification that speech recognition is working
+            window.dispatchEvent(
+              new CustomEvent("showMessage", {
+                detail: {
+                  title: "Распознавание речи",
+                  message:
+                    "Распознавание речи активно. Говорите, чтобы начать запись.",
+                  type: "info",
+                },
+              })
+            );
+          };
+
+          recognition.start();
+          recognitionRef.current = recognition;
+          console.log("Speech recognition initialized");
+        } else {
+          console.warn("Web Speech API is not supported in this browser");
           window.dispatchEvent(
             new CustomEvent("showMessage", {
               detail: {
-                title: "Ошибка распознавания речи",
-                message: `Ошибка: ${event.error}. Распознавание будет перезапущено.`,
-                type: "error",
-              },
-            })
-          );
-
-          // Only restart if we're still recording and the error isn't due to manual stop
-          if (
-            recordingState.isRecording &&
-            event.error !== "no-speech" &&
-            event.error !== "aborted" &&
-            event.error !== "not-allowed"
-          ) {
-            setTimeout(() => {
-              // Double-check that we're still recording
-              if (recordingState.isRecording) {
-                if (recognitionRef.current) {
-                  try {
-                    console.log("Restarting speech recognition after error...");
-                    recognitionRef.current.start();
-                  } catch (e) {
-                    console.error("Failed to restart speech recognition:", e);
-                    window.dispatchEvent(
-                      new CustomEvent("showMessage", {
-                        detail: {
-                          title: "Ошибка",
-                          message:
-                            "Не удалось перезапустить распознавание речи",
-                          type: "error",
-                        },
-                      })
-                    );
-                  }
-                }
-              }
-            }, 300);
-          }
-        };
-
-        recognition.onend = () => {
-          console.log("Speech recognition ended");
-          // Automatically restart speech recognition if still recording
-          // But only if we haven't manually stopped it
-          if (recordingState.isRecording) {
-            setTimeout(() => {
-              // Double-check that we're still recording
-              if (recordingState.isRecording) {
-                if (recognitionRef.current) {
-                  try {
-                    console.log("Restarting speech recognition after end...");
-                    recognitionRef.current.start();
-                    console.log("Speech recognition restarted");
-                  } catch (e) {
-                    console.error("Failed to restart speech recognition:", e);
-                    window.dispatchEvent(
-                      new CustomEvent("showMessage", {
-                        detail: {
-                          title: "Ошибка",
-                          message:
-                            "Не удалось перезапустить распознавание речи",
-                          type: "error",
-                        },
-                      })
-                    );
-                  }
-                }
-              }
-            }, 300);
-          }
-        };
-
-        recognition.onstart = () => {
-          console.log("Speech recognition started");
-          // Show a subtle notification that speech recognition is working
-          window.dispatchEvent(
-            new CustomEvent("showMessage", {
-              detail: {
-                title: "Распознавание речи",
+                title: "Предупреждение",
                 message:
-                  "Распознавание речи активно. Говорите, чтобы начать запись.",
+                  "Web Speech API не поддерживается в этом браузере. Расшифровка речи недоступна.",
                 type: "info",
               },
             })
           );
-        };
-
-        recognition.start();
-        recognitionRef.current = recognition;
-        console.log("Speech recognition initialized");
+        }
       } else {
-        console.warn("Web Speech API is not supported in this browser");
+        console.log(
+          "Tajik language selected - skipping real-time speech recognition"
+        );
+        // For Tajik language, we'll rely on backend transcription only
         window.dispatchEvent(
           new CustomEvent("showMessage", {
             detail: {
-              title: "Предупреждение",
-              message:
-                "Web Speech API не поддерживается в этом браузере. Расшифровка речи недоступна.",
+              title: "Язык таджикский",
+              message: "Расшифровка будет выполнена после остановки записи.",
               type: "info",
             },
           })
@@ -1202,69 +1394,81 @@ function RecordInterrogation() {
             // Note: There's no direct way to check if SpeechRecognition is actively listening
             // So we'll just log that the health check is running
             console.log("Health check: Speech recognition monitoring active");
-          } else if (SpeechRecognition) {
-            // If we lost the reference but should have speech recognition, try to recreate it
-            console.log(
-              "Health check: Attempting to recreate speech recognition"
-            );
-            try {
-              const recognition = new SpeechRecognition();
-              recognition.continuous = true;
-              recognition.interimResults = true;
-              recognition.lang = "ru-RU";
-              recognition.maxAlternatives = 1;
+          } else if (transcriptionLanguage === "ru") {
+            // Only recreate speech recognition for Russian language
+            const SpeechRecognition =
+              (window as any).SpeechRecognition ||
+              (window as any).webkitSpeechRecognition;
 
-              // Reattach event handlers
-              recognition.onresult = (event: any) => {
-                console.log(
-                  "Speech recognition result (from recreated):",
-                  event
-                );
-                let interimTranscript = "";
-                let finalTranscript = "";
+            if (SpeechRecognition) {
+              // If we lost the reference but should have speech recognition, try to recreate it
+              console.log(
+                "Health check: Attempting to recreate speech recognition"
+              );
+              try {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                // Set language to Russian
+                recognition.lang = "ru-RU";
+                recognition.maxAlternatives = 1;
 
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                  const transcript = event.results[i][0].transcript;
-                  if (event.results[i].isFinal) {
-                    finalTranscript += transcript + " ";
-                  } else {
-                    interimTranscript += transcript;
+                // Reattach event handlers
+                recognition.onresult = (event: any) => {
+                  console.log(
+                    "Speech recognition result (from recreated):",
+                    event
+                  );
+                  let interimTranscript = "";
+                  let finalTranscript = "";
+
+                  for (
+                    let i = event.resultIndex;
+                    i < event.results.length;
+                    i++
+                  ) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                      finalTranscript += transcript + " ";
+                    } else {
+                      interimTranscript += transcript;
+                    }
                   }
-                }
 
-                if (finalTranscript || interimTranscript) {
-                  console.log("Updating transcript (from recreated):", {
-                    finalTranscript,
-                    interimTranscript,
-                  });
-                  setInterrogationData((prev) => ({
-                    ...prev,
-                    transcript: prev.transcript + finalTranscript,
-                  }));
-                }
-              };
+                  if (finalTranscript || interimTranscript) {
+                    console.log("Updating transcript (from recreated):", {
+                      finalTranscript,
+                      interimTranscript,
+                    });
+                    setInterrogationData((prev) => ({
+                      ...prev,
+                      transcript: prev.transcript + finalTranscript,
+                    }));
+                  }
+                };
 
-              recognition.onerror = (event: any) => {
-                console.error(
-                  "Speech recognition error (from recreated):",
-                  event.error,
-                  event
-                );
-              };
+                recognition.onerror = (event: any) => {
+                  console.error(
+                    "Speech recognition error (from recreated):",
+                    event.error,
+                    event
+                  );
+                };
 
-              recognition.onend = () => {
-                console.log("Speech recognition ended (from recreated)");
-              };
+                recognition.onend = () => {
+                  console.log("Speech recognition ended (from recreated)");
+                };
 
-              recognition.onstart = () => {
-                console.log("Speech recognition started (from recreated)");
-              };
+                recognition.onstart = () => {
+                  console.log("Speech recognition started (from recreated)");
+                };
 
-              recognition.start();
-              recognitionRef.current = recognition;
-              console.log("Speech recognition recreated and started");
-            } catch (e) {
-              console.error("Failed to recreate speech recognition:", e);
+                recognition.start();
+                recognitionRef.current = recognition;
+                console.log("Speech recognition recreated and started");
+              } catch (e) {
+                console.error("Failed to recreate speech recognition:", e);
+              }
             }
           }
         }
@@ -1661,6 +1865,21 @@ ${tempInterrogationData.transcript}
   };
 
   const restartSpeechRecognition = () => {
+    // Only allow restart for Russian language
+    if (transcriptionLanguage !== "ru") {
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Перезапуск невозможен",
+            message:
+              "Перезапуск распознавания речи доступен только для русского языка",
+            type: "info",
+          },
+        })
+      );
+      return;
+    }
+
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
@@ -1898,6 +2117,26 @@ ${tempInterrogationData.transcript}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
           </div>
+
+          <div>
+            <label
+              htmlFor="language"
+              className="block mb-2 font-medium text-gray-700"
+            >
+              Язык распознавания:
+            </label>
+            <select
+              id="language"
+              value={transcriptionLanguage}
+              onChange={(e) =>
+                setTranscriptionLanguage(e.target.value as "ru" | "tg")
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            >
+              <option value="ru">Русский</option>
+              <option value="tg">Таджикский</option>
+            </select>
+          </div>
         </div>
 
         <div>
@@ -2023,7 +2262,9 @@ function UserProfile({
           <span className="flex-1 text-gray-800">{user.username}</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <label className="font-bold text-gray-600 w-full sm:w-40">Роль:</label>
+          <label className="font-bold text-gray-600 w-full sm:w-40">
+            Роль:
+          </label>
           <span className="flex-1 text-gray-800">
             {user.role === "admin" ? "Администратор" : "Следователь"}
           </span>

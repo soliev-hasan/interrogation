@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { authenticateToken } from "../middleware/auth";
-import { uploadAudio, getAudio } from "../controllers/audioController";
+import { upload } from "../utils/fileUpload";
+import {
+  uploadAudio,
+  getAudio,
+  transcribeAudio,
+} from "../controllers/audioController";
 
 const router = Router();
 
@@ -17,5 +22,12 @@ router.post("/upload/:id", asyncHandler(uploadAudio));
 
 // GET /api/audio/:filename - Get an audio file
 router.get("/:filename", asyncHandler(getAudio));
+
+// POST /api/audio/transcribe - Transcribe audio file
+router.post(
+  "/transcribe",
+  upload.single("audio"),
+  asyncHandler(transcribeAudio)
+);
 
 export default router;
