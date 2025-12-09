@@ -7,7 +7,7 @@ import {
   transcribeAudio,
 } from "../controllers/audioController";
 
-const router = Router();
+const router: Router = Router();
 
 // Wrap async middleware to handle errors properly
 const asyncHandler = (fn: Function) => (req: any, res: any, next: any) => {

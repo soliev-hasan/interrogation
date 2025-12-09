@@ -6,8 +6,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (include dev deps for the TypeScript build)
+RUN npm install -g pnpm
+RUN pnpm install
+
+# Install ffmpeg binary for audio processing
+RUN apk add ffmpeg
+# Make ffmpeg path explicit for app code
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
 
 # Copy source code
 COPY . .

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import * as api from "./services/api";
 import MessageModal from "./components/MessageModal";
 import LoadingSpinner from "./components/LoadingSpinner";
+import { API_BASE_URL } from "./services/api";
 
 // Add this interface for interrogation data
 interface InterrogationData {
@@ -1070,16 +1071,13 @@ function RecordInterrogation() {
 
             if (transcriptionLanguage === "ru") return;
             setIsTranscribing(true);
-            const response = await fetch(
-              "http://localhost:3000/api/audio/transcribe",
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-              }
-            );
+            const response = await fetch(`${API_BASE_URL}/audio/transcribe`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: formData,
+            });
             if (response.ok) {
               const result = await response.json();
 

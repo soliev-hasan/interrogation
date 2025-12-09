@@ -1,0 +1,66 @@
+module.exports = {
+  apps: [
+    {
+      name: "web-frontend",
+      script: "npm",
+      args: "run preview",
+      cwd: "./",
+      exec_mode: "fork",
+      env: {
+        NODE_ENV: "production",
+        PORT: 3000,
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "500M",
+      error_file: "./logs/web-frontend-error.log",
+      out_file: "./logs/web-frontend-out.log",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      merge_logs: true,
+    },
+    {
+      name: "node-backend",
+      script: "node",
+      args: "dist/server.js",
+      cwd: "./backend",
+      env: {
+        NODE_ENV: "production",
+      },
+      env_production: {
+        PORT: 3001,
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "1G",
+      error_file: "./logs/node-backend-error.log",
+      out_file: "./logs/node-backend-out.log",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      merge_logs: true,
+      // Wait for MongoDB connection before considering app online
+      wait_ready: true,
+      listen_timeout: 10000,
+    },
+    {
+      name: "python-backend",
+      // Use full path to Python to avoid pyenv shim issues
+      script: "/Users/codejoker/.pyenv/versions/3.13.0/bin/python3",
+      args: "-m uvicorn app:app --host 0.0.0.0 --port 8000",
+      cwd: "./backend-py",
+      exec_mode: "fork",
+      env: {
+        PYTHONPATH: "./backend-py",
+        PYTHONUNBUFFERED: "1",
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "2G",
+      error_file: "./logs/python-backend-error.log",
+      out_file: "./logs/python-backend-out.log",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      merge_logs: true,
+    },
+  ],
+};

@@ -18,10 +18,14 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # Install Python dependencies
-# Note: We constrain numpy to <2.0.0 due to compatibility issues with PyTorch
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir "numpy<2.0.0" && \
-    pip install --no-cache-dir -r requirements.txt
+# - Cache pip downloads between builds
+# - Prefer binary wheels
+# - Use the CPU wheel index for PyTorch to avoid heavy source builds
+ENV PIP_PREFER_BINARY=1
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
+    pip install "numpy<2.0.0" && \
+    pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
 # Copy application code
 COPY . .

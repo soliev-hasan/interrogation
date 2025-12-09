@@ -2,14 +2,17 @@ import { Request, Response } from "express";
 import { upload } from "../utils/fileUpload";
 import Interrogation from "../models/InterrogationModel";
 import path from "path";
-import fetch from "node-fetch";
 import FormData from "form-data";
+import fetch from "node-fetch";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
 
-// Set ffmpeg path
-ffmpeg.setFfmpegPath(ffmpegStatic as string);
+// Resolve ffmpeg path: prefer env override, else bundled static binary
+const ffmpegPath = process.env.FFMPEG_PATH || (ffmpegStatic as string);
+if (ffmpegPath) {
+  ffmpeg.setFfmpegPath(ffmpegPath);
+}
 
 // Function to convert audio file to MP3
 const convertToMp3 = (inputPath: string, outputPath: string): Promise<void> => {
@@ -93,6 +96,13 @@ export const getAudio = async (req: Request, res: Response): Promise<void> => {
     const filename = req.params.filename;
     // Serve the actual audio file
     const filePath = path.join(__dirname, "../../uploads", filename);
+
+    // Check if file exists before trying to send it
+    if (!fs.existsSync(filePath)) {
+      res.status(404).json({ message: "Audio file not found" });
+      return;
+    }
+
     res.sendFile(filePath);
   } catch (error) {
     console.error("Get audio error:", error);
@@ -116,10 +126,12 @@ export const transcribeAudio = async (
     await convertToMp3(req.file.path, mp3FilePath);
 
     // Forward the request to Python service
-    const pythonServiceUrl = "http://localhost:8000/transcribe";
+    const pythonServiceUrl =
+      process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
 
     // Create form data to forward to Python service with MP3 file
     const form = new FormData();
+    // Use file stream instead of buffer for better compatibility
     form.append("audio", fs.createReadStream(mp3FilePath), {
       filename: req.file.originalname.replace(
         path.extname(req.file.originalname),
@@ -144,10 +156,11 @@ export const transcribeAudio = async (
       form.append("max_length", req.body.max_length);
     }
 
-    // Make request to Python service
-    const response = await fetch(pythonServiceUrl, {
+    // Make request to Python service using node-fetch (better form-data support)
+    const transcribeUrl = `${pythonServiceUrl}/transcribe`;
+    const response = await fetch(transcribeUrl, {
       method: "POST",
-      // @ts-ignore
+      headers: form.getHeaders(),
       body: form,
     });
 

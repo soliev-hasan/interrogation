@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import connectDB from "./config/database";
 import interrogationRoutes from "./routes/interrogations";
 import authRoutes from "./routes/auth";
@@ -11,6 +12,16 @@ import documentsRoutes from "./routes/documents";
 
 // Load environment variables
 dotenv.config();
+
+// Create necessary directories if they don't exist
+const uploadsDir = path.join(__dirname, "../uploads");
+const documentsDir = path.join(__dirname, "../documents");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(documentsDir)) {
+  fs.mkdirSync(documentsDir, { recursive: true });
+}
 
 // Connect to MongoDB
 connectDB();

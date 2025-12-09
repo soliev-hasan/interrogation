@@ -2,7 +2,7 @@ import { Router } from "express";
 import { register, login, getProfile } from "../controllers/authController";
 import { authenticateToken } from "../middleware/auth";
 
-const router = Router();
+const router: Router = Router();
 
 // Public routes
 router.post("/register", register);

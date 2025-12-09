@@ -9,7 +9,7 @@ import {
   getInterrogationsByUser,
 } from "../controllers/interrogationController";
 
-const router = Router();
+const router: Router = Router();
 
 // Wrap async middleware to handle errors properly
 const asyncHandler = (fn: Function) => (req: any, res: any, next: any) => {
