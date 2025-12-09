@@ -25,4 +25,5 @@ backend/documents
 *.njsproj
 *.sln
 *.sw?
+.env
 
