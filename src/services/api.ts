@@ -1,7 +1,7 @@
 // API service for interacting with the backend
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:4001/api";
 console.log(API_BASE_URL, "API_BASE_URL");
 
 // Auth API
