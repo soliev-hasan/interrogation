@@ -10,19 +10,36 @@ This guide explains how to run the web frontend, Node.js backend, and Python bac
    npm install -g pm2
    ```
 
-2. **Install Python dependencies:**
+2. **Setup Python virtual environment (Recommended for Ubuntu/Linux):**
+
+   ```bash
+   # Run the setup script (creates venv and installs dependencies)
+   ./scripts/setup-python-venv.sh
+   ```
+
+   Or manually:
 
    ```bash
    cd backend-py
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install --upgrade pip
    pip install -r requirements.txt
    cd ..
    ```
 
+   **Note:** The ecosystem config uses `./backend-py/venv/bin/python3` by default. If you're using a different Python setup (like pyenv on macOS), update the `script` path in `ecosystem.config.cjs`.
+
 3. **Build the frontend:**
 
    ```bash
-   npm install
+   npm install --legacy-peer-deps
    npm run build
+   ```
+
+   **Note:** If you get rollup errors on Ubuntu/Linux, run:
+   ```bash
+   ./scripts/fix-rollup-ubuntu.sh
    ```
 
 4. **Build the Node.js backend:**
@@ -131,8 +148,8 @@ pm2 reload ecosystem.config.cjs
 
 ## Service Ports
 
-- **Web Frontend**: http://localhost:5173 (Vite preview)
-- **Node Backend**: http://localhost:3000 (or PORT from .env)
+- **Web Frontend**: http://localhost:4000 (Vite preview, configurable via PORT env)
+- **Node Backend**: http://localhost:4001 (or PORT from .env)
 - **Python Backend**: http://localhost:8000
 
 ## Troubleshooting
@@ -140,7 +157,12 @@ pm2 reload ecosystem.config.cjs
 1. **If frontend doesn't work with `vite preview`:**
 
    - Make sure you've built the frontend: `npm run build`
-   - Check if port 5173 is available
+   - Check if port 4000 (or configured PORT) is available
+   - **If you get rollup errors on Ubuntu/Linux:**
+     ```bash
+     ./scripts/fix-rollup-ubuntu.sh
+     ```
+     This will reinstall dependencies with the correct platform-specific rollup binary
 
 2. **If Node backend fails:**
 
@@ -150,9 +172,29 @@ pm2 reload ecosystem.config.cjs
 
 3. **If Python backend fails:**
 
-   - Ensure Python 3.8+ is installed
-   - Check all dependencies are installed: `pip install -r backend-py/requirements.txt`
-   - Verify uvicorn is installed: `pip install uvicorn[standard]`
+   - Ensure Python 3.8+ is installed: `python3 --version`
+   - **On Ubuntu/Linux:** Make sure virtual environment is set up:
+     ```bash
+     ./scripts/setup-python-venv.sh
+     ```
+   - **If using system Python:** Install dependencies globally:
+     ```bash
+     pip3 install -r backend-py/requirements.txt
+     ```
+     Then update `ecosystem.config.cjs` to use `python3` instead of `./backend-py/venv/bin/python3`
+   - **If using pyenv (macOS):** Use full path to pyenv Python in `ecosystem.config.cjs`:
+     ```javascript
+     script: "/Users/your-username/.pyenv/versions/3.13.0/bin/python3";
+     ```
+   - Verify uvicorn is installed in the Python you're using:
+
+     ```bash
+     # For venv
+     ./backend-py/venv/bin/python3 -m pip list | grep uvicorn
+
+     # For system Python
+     python3 -m pip list | grep uvicorn
+     ```
 
 4. **Check logs:**
    ```bash

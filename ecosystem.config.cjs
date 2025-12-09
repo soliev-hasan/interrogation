@@ -44,8 +44,11 @@ module.exports = {
     },
     {
       name: "python-backend",
-      // Use full path to Python to avoid pyenv shim issues
-      script: "python3",
+      // Use virtual environment Python to ensure dependencies are available
+      // On Ubuntu/Linux, use: ./backend-py/venv/bin/python3
+      // On macOS with pyenv, you can use: /Users/codejoker/.pyenv/versions/3.13.0/bin/python3
+      // Or create venv and use: ./backend-py/venv/bin/python3
+      script: "./backend-py/venv/bin/python3",
       args: "-m uvicorn app:app --host 0.0.0.0 --port 8000",
       cwd: "./backend-py",
       exec_mode: "fork",
