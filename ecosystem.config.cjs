@@ -45,7 +45,7 @@ module.exports = {
     {
       name: "python-backend",
       // Use full path to Python to avoid pyenv shim issues
-      script: "/Users/codejoker/.pyenv/versions/3.13.0/bin/python3",
+      script: "python3",
       args: "-m uvicorn app:app --host 0.0.0.0 --port 8000",
       cwd: "./backend-py",
       exec_mode: "fork",
