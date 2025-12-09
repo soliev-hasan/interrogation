@@ -18,14 +18,15 @@ export const generateDocument = async (
     }
 
     // Generate the document content
-    const content = `Interrogation Report
+    const content = `Отчет о допросе
+
 
 Название: ${interrogation.title}
 Дата: ${interrogation.date.toISOString().split("T")[0]}
 Подозреваемый: ${interrogation.suspect}
 Следователь: ${interrogation.officer}
 
-Транскрипт:${interrogation.transcript || "No transcript available"}
+Транскрипт: ${interrogation.transcript || "No transcript available"}
 
 Создано: ${new Date().toISOString().split("T")[0]}`;
 

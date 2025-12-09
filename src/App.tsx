@@ -183,7 +183,7 @@ function App() {
       />
 
       {!user ? (
-        <AuthForm type="login" onLogin={handleLogin} onSwitch={() => {}} />
+        <AuthForm onLogin={handleLogin} />
       ) : (
         <div className="flex flex-col min-h-screen">
           <header className="bg-white shadow-md sticky top-0 z-50">
@@ -254,12 +254,10 @@ function App() {
 }
 
 interface AuthFormProps {
-  type: "login";
   onLogin: (username: string, password: string) => void;
-  onSwitch: () => void;
 }
 
-function AuthForm({ type, onLogin, onSwitch }: AuthFormProps) {
+function AuthForm({ onLogin }: AuthFormProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -321,35 +319,79 @@ function AuthForm({ type, onLogin, onSwitch }: AuthFormProps) {
 }
 
 function Dashboard() {
+  const [loading, setLoading] = useState(false);
+  const [interrogations, setInterrogationsCount] = useState(0);
+  const [monthlyCount, setMonthlyCount] = useState(0);
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        // Fetch all interrogations for the current user
+        const interrogations = await api.interrogationAPI.getAll(token);
+
+        // Calculate total interrogations count
+        setInterrogationsCount(interrogations.length);
+
+        // Calculate this month's interrogations count
+        const now = new Date();
+        const thisMonth = now.getMonth();
+        const thisYear = now.getFullYear();
+
+        const monthlyInterrogations = interrogations.filter(
+          (interrogation: any) => {
+            const interrogationDate = new Date(interrogation.date);
+            return (
+              interrogationDate.getMonth() === thisMonth &&
+              interrogationDate.getFullYear() === thisYear
+            );
+          }
+        );
+
+        setMonthlyCount(monthlyInterrogations.length);
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-center mb-8 text-2xl sm:text-3xl font-semibold text-gray-800">
         Панель управления следователя
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md text-center">
-          <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
-            Всего допросов
-          </h3>
-          <p className="text-3xl sm:text-4xl font-bold text-blue-600">12</p>
+      {loading ? (
+        <LoadingSpinner message="Загрузка..." size="lg" />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
+              Всего допросов
+            </h3>
+            <p className="text-3xl sm:text-4xl font-bold text-blue-600">
+              {interrogations}
+            </p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md text-center">
+            <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
+              В этом месяце
+            </h3>
+            <p className="text-3xl sm:text-4xl font-bold text-blue-600">
+              {monthlyCount}
+            </p>
+          </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md text-center">
-          <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
-            В этом месяце
-          </h3>
-          <p className="text-3xl sm:text-4xl font-bold text-blue-600">3</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-md text-center">
-          <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
-            На рассмотрении
-          </h3>
-          <p className="text-3xl sm:text-4xl font-bold text-blue-600">2</p>
-        </div>
-      </div>
+      )}
       <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
           <button
-            className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-center font-medium"
+            className="px-12 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-center font-medium"
             onClick={() => {
               // Navigate to the record view
               window.location.hash = "#record";
@@ -357,9 +399,6 @@ function Dashboard() {
             }}
           >
             Начать новый допрос
-          </button>
-          <button className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-center font-medium">
-            Просмотреть последние
           </button>
         </div>
       </div>
@@ -690,11 +729,6 @@ function ViewInterrogation({
       return;
     }
 
-    // Log all properties of the interrogation object
-    const keys = Object.keys(interrogation);
-
-    // Log all values
-
     // Try to find the audio file path in a more comprehensive way
     const findAudioFilePath = (obj: any): string | null => {
       // Direct properties
@@ -793,10 +827,7 @@ function ViewInterrogation({
       // Create download link
       const link = document.createElement("a");
       link.href = downloadResult.url;
-      link.download = `Допрос_${interrogation.title.replace(
-        /[^a-zA-Z0-9]/g,
-        "_"
-      )}.docx`;
+      link.download = `${interrogation.title}.docx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -975,81 +1006,6 @@ function RecordInterrogation() {
     "ru" | "tg"
   >("ru");
 
-  const handleTestFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      // Show loading message
-      window.dispatchEvent(
-        new CustomEvent("showMessage", {
-          detail: {
-            title: "Транскрипция аудио",
-            message: "Выполняется транскрипция аудио... Пожалуйста, подождите.",
-            type: "info",
-          },
-        })
-      );
-
-      // Create FormData for the transcription request
-      const formData = new FormData();
-      formData.append("audio", file);
-
-      // Send request to our backend which will proxy to Python service
-      // Get token from localStorage
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        "http://localhost:3000/api/audio/transcribe",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-
-        // Update the transcript in the textarea
-        setInterrogationData((prev) => ({
-          ...prev,
-          transcript: result.transcription || prev.transcript,
-        }));
-
-        // Show success message
-        window.dispatchEvent(
-          new CustomEvent("showMessage", {
-            detail: {
-              title: "Транскрипция завершена",
-              message: `Аудио успешно транскрибировано. Язык: ${
-                transcriptionLanguage == "tg" ? "Таджикский" : "Русский"
-              }`,
-              type: "success",
-            },
-          })
-        );
-      } else {
-        throw new Error("Transcription failed");
-      }
-    } catch (error) {
-      console.error("Transcription error:", error);
-      window.dispatchEvent(
-        new CustomEvent("showMessage", {
-          detail: {
-            title: "Ошибка транскрипции",
-            message: "Не удалось транскрибировать аудио",
-            type: "error",
-          },
-        })
-      );
-    }
-  };
-
   const startRecording = async () => {
     try {
       // Clear any existing speech recognition reference
@@ -1095,7 +1051,6 @@ function RecordInterrogation() {
         if (audioChunks.length > 0) {
           try {
             // Show loading spinner for transcription
-            setIsTranscribing(true);
 
             // Create a File object with the correct extension based on MIME type
             const extension = mimeType.includes("webm") ? ".webm" : ".ogg";
@@ -1114,7 +1069,7 @@ function RecordInterrogation() {
             const token = localStorage.getItem("token");
 
             if (transcriptionLanguage === "ru") return;
-
+            setIsTranscribing(true);
             const response = await fetch(
               "http://localhost:3000/api/audio/transcribe",
               {
@@ -1665,13 +1620,13 @@ function RecordInterrogation() {
 
       // Create a Blob with the document content
       const docContent = `
-Допрос №: Временный
+Временный
 Название: ${tempInterrogationData.title}
 Дата: ${tempInterrogationData.date}
 Подозреваемый: ${tempInterrogationData.suspect}
 Следователь: ${tempInterrogationData.officer}
 
-Расшифровка речи:
+Транскрипт: 
 ${tempInterrogationData.transcript}
       `;
 
@@ -1683,10 +1638,7 @@ ${tempInterrogationData.transcript}
       // Create download link
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Допрос_${tempInterrogationData.title.replace(
-        /[^a-zA-Z0-9]/g,
-        "_"
-      )}.docx`;
+      link.download = `${tempInterrogationData.title}.docx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1769,7 +1721,7 @@ ${tempInterrogationData.transcript}
 
       // If we have audio, transcribe it and then upload it
       let transcript = interrogationData.transcript;
-      let audioFilePath = "";
+      // let audioFilePath = "";
       if (recordingState.audioChunks.length > 0 && interrogationResponse.id) {
         const audioBlob = new Blob(recordingState.audioChunks, {
           type: "audio/wav",
@@ -1794,6 +1746,7 @@ ${tempInterrogationData.transcript}
 
         // Transcribe the audio using our new Python service
         try {
+          // @ts-ignore
           const transcriptionResponse = await api.audioAPI.transcribe(
             audioFile,
             "ru-RU"
@@ -1831,23 +1784,13 @@ ${tempInterrogationData.transcript}
         // Extract transcript and audio file path from response
         transcript =
           audioResponse.transcript || audioResponse.transcription || transcript;
-        audioFilePath =
-          audioResponse.filePath ||
-          audioResponse.audioFilePath ||
-          audioResponse.path ||
-          "";
+        // audioFilePath =
+        //   audioResponse.filePath ||
+        //   audioResponse.audioFilePath ||
+        //   audioResponse.path ||
+        //   "";
 
         // Use the updated interrogation from the audio response if available
-        if (audioResponse.interrogation) {
-          // We don't need to make a separate update call since the audio upload already updated the interrogation
-        } else {
-          // Update the interrogation with the transcript and audio file path
-          const updateResponse = await api.interrogationAPI.update(
-            interrogationResponse.id,
-            { transcript, audioFilePath },
-            token
-          );
-        }
       }
 
       // Generate Word document
@@ -1902,7 +1845,14 @@ ${tempInterrogationData.transcript}
         officer: "",
         transcript: "",
       });
-
+      setRecordingState({
+        isRecording: false,
+        isPaused: false,
+        mediaRecorder: null,
+        audioChunks: [],
+        audioUrl: null,
+        recordingTime: 0,
+      });
       // Stop recording if it's still active
       if (recordingState.isRecording) {
         stopRecording();
@@ -2207,6 +2157,11 @@ ${tempInterrogationData.transcript}
           >
             Расшифровка речи:
           </label>
+          {isTranscribing && (
+            <div>
+              <LoadingSpinner />
+            </div>
+          )}
           <textarea
             id="transcript"
             value={interrogationData.transcript}
@@ -2303,19 +2258,39 @@ ${tempInterrogationData.transcript}
         )}
         <button
           className="px-6 py-3 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors font-medium"
-          onClick={() =>
+          onClick={() => {
+            // Сброс данных допроса
+            setInterrogationData({
+              title: "",
+              date: new Date().toISOString().split("T")[0],
+              suspect: "",
+              officer: "",
+              transcript: "",
+            });
+
+            // Сброс состояния записи
+            setRecordingState({
+              isRecording: false,
+              isPaused: false,
+              mediaRecorder: null,
+              audioChunks: [],
+              audioUrl: null,
+              recordingTime: 0,
+            });
+
+            // Уведомление
             window.dispatchEvent(
               new CustomEvent("showMessage", {
                 detail: {
-                  title: "Отмена",
+                  title: "Сброшено",
                   message: "Операция отменена",
                   type: "info",
                 },
               })
-            )
-          }
+            );
+          }}
         >
-          Отмена
+          Сбросить
         </button>
       </div>
     </div>
@@ -2360,7 +2335,7 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
-
+  const [interrogations, setInterrogations] = useState();
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -2490,7 +2465,67 @@ function AdminDashboard() {
       );
     }
   };
+  const fetchInterrogations = useCallback(async () => {
+    try {
+      setLoading(true);
 
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        window.dispatchEvent(
+          new CustomEvent("showMessage", {
+            detail: {
+              title: "Ошибка аутентификации",
+              message: "Требуется вход в систему",
+              type: "error",
+            },
+          })
+        );
+        return;
+      }
+
+      const data = await api.interrogationAPI.getAll(token);
+
+      // Map _id to id for consistency
+      const mappedData = data.map((item: any) => {
+        // Create a new object with id field and all other properties
+        const newItem = {
+          ...item,
+          id: item._id,
+        };
+        return newItem;
+      });
+
+      // Sort by date descending (newest first)
+      const sortedData = mappedData.sort((a: any, b: any) => {
+        const dateA = new Date(a.date || 0).getTime();
+        const dateB = new Date(b.date || 0).getTime();
+        return dateB - dateA;
+      });
+
+      setInterrogations(sortedData.length);
+    } catch (error) {
+      console.error("Ошибка при получении допросов:", error);
+
+      // We'll handle this in the parent component
+      window.dispatchEvent(
+        new CustomEvent("showMessage", {
+          detail: {
+            title: "Ошибка",
+            message:
+              "Не удалось загрузить допросы: " + (error as Error).message,
+            type: "error",
+          },
+        })
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInterrogations();
+  }, [fetchInterrogations]);
   if (loading) {
     return (
       <div className="text-center py-8 text-gray-600">
@@ -2589,7 +2624,7 @@ function AdminDashboard() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="bg-white p-6 rounded-lg shadow-md text-center border border-gray-200">
                 <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
                   Всего пользователей
@@ -2603,15 +2638,7 @@ function AdminDashboard() {
                   Всего допросов
                 </h3>
                 <p className="text-3xl sm:text-4xl font-bold text-blue-600">
-                  24
-                </p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow-md text-center border border-gray-200">
-                <h3 className="text-gray-600 mb-2 text-sm sm:text-base">
-                  Активные сессии
-                </h3>
-                <p className="text-3xl sm:text-4xl font-bold text-blue-600">
-                  3
+                  {interrogations}
                 </p>
               </div>
             </div>

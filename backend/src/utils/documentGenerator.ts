@@ -16,17 +16,18 @@ if (!fs.existsSync(documentsDir)) {
 export const generateWordDocument = (interrogation: IInterrogation): Buffer => {
   try {
     // Create a simple document content
-    const content = `Interrogation Report
+    const content = `Отчет о допросе
 
-Title: ${interrogation.title}
-Date: ${interrogation.date.toISOString().split("T")[0]}
-Suspect: ${interrogation.suspect}
-Officer: ${interrogation.officer}
 
-Transcript:
+Название: ${interrogation.title}
+Дата: ${interrogation.date.toISOString().split("T")[0]}
+Подозреваемый: ${interrogation.suspect}
+Следователь: ${interrogation.officer}
+
+Транскрипт: 
 ${interrogation.transcript || "No transcript available"}
 
-Created: ${new Date().toISOString().split("T")[0]}`;
+Создано: ${new Date().toISOString().split("T")[0]}`;
 
     // Return as buffer
     return Buffer.from(content, "utf-8");
