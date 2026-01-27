@@ -5,11 +5,13 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-      
-    ports:
-      - "3000:3000"
+      args:
+        - NODE_ENV=production
+        
     env_file:
       - .env
+    ports:
+      - "3000:3000"
     networks:
       - interrogation_network
 
@@ -39,7 +41,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-      - .:app
+      - .:/app
 
 networks:
   interrogation_network:
