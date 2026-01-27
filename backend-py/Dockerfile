@@ -1,33 +1,38 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
-# Set working directory
+# Avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
+# System dependencies (for soundfile/libsndfile and basic build tools)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     libsndfile1 \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first to leverage Docker cache
-COPY requirements.txt .
-
 # Install Python dependencies
-# Note: We constrain numpy to <2.0.0 due to compatibility issues with PyTorch
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir "numpy<2.0.0" && \
-    pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Pre-download model weights to bake into the image (avoids cold-start downloads)
+RUN python - <<'PY'
+from transformers import WhisperProcessor, WhisperForConditionalGeneration
+MODEL_ID = "re-skill/whisper-large-v3-turbo-tj"
+print(f"Downloading {MODEL_ID} ...")
+WhisperProcessor.from_pretrained(MODEL_ID)
+WhisperForConditionalGeneration.from_pretrained(MODEL_ID)
+print("Download complete.")
+PY
 
 # Copy application code
 COPY . .
 
-# Expose port
+# Expose FastAPI port
 EXPOSE 8000
 
-# Run the application
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Default command (can be overridden by docker-compose)
+CMD ["python", "app.py"]

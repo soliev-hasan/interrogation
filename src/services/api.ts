@@ -1,6 +1,7 @@
 // API service for interacting with the backend
 
-const API_BASE_URL = "http://localhost:3000/api";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+console.log("API_BASE_URL", API_BASE_URL);
 
 // Auth API
 export const authAPI = {
@@ -231,7 +232,7 @@ export const documentAPI = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -243,7 +244,7 @@ export const documentAPI = {
 
   download: async (filename: string) => {
     const response = await fetch(
-      `${API_BASE_URL}/documents/download/${filename}`
+      `${API_BASE_URL}/documents/download/${filename}`,
     );
 
     if (!response.ok) {
@@ -263,7 +264,7 @@ export const audioAPI = {
     interrogationId: string,
     audioFile: File,
     transcript: string,
-    token: string
+    token: string,
   ) => {
     const formData = new FormData();
     formData.append("audio", audioFile);
@@ -277,7 +278,7 @@ export const audioAPI = {
           Authorization: `Bearer ${token}`,
         },
         body: formData,
-      }
+      },
     );
 
     if (!response.ok) {

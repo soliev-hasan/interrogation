@@ -5,8 +5,11 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+      
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     networks:
       - interrogation_network
 
@@ -34,7 +37,9 @@ services:
     networks:
       - interrogation_network
     environment:
-      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:app
 
 networks:
   interrogation_network:

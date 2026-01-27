@@ -708,7 +708,8 @@ function ViewInterrogation({
           if (!formattedPath.startsWith("/")) {
             formattedPath = "/" + formattedPath;
           }
-          fullAudioUrl = `http://localhost:3000${formattedPath}`;
+
+          fullAudioUrl = `https://хадж-умра.рф${formattedPath}`;
         }
         setAudioUrl(fullAudioUrl);
       } else {
@@ -777,7 +778,7 @@ function ViewInterrogation({
             if (!formattedPath.startsWith("/")) {
               formattedPath = "/" + formattedPath;
             }
-            fullAudioUrl = `http://localhost:3000${formattedPath}`;
+            fullAudioUrl = `https://хадж-умра.рф${formattedPath}`;
           }
           setAudioUrl(fullAudioUrl);
         } catch (error) {
@@ -1070,23 +1071,20 @@ function RecordInterrogation() {
 
             if (transcriptionLanguage === "ru") return;
             setIsTranscribing(true);
-            const response = await fetch(
-              "http://localhost:3000/api/audio/transcribe",
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-              }
-            );
+            const response = await fetch(`${api.API_BASE_URL}/transcribe`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: formData,
+            });
             if (response.ok) {
               const result = await response.json();
 
               // Update the transcript in the textarea
               setInterrogationData((prev) => ({
                 ...prev,
-                transcript: result.transcription || prev.transcript,
+                transcript: result.text || prev.transcript,
               }));
 
               // Hide loading spinner
