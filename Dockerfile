@@ -5,8 +5,11 @@ RUN npm install -g pnpm
 RUN pnpm install
 COPY ./ .
 
-# ARG NODE_ENV
-# ENV NODE_ENV="production"
+ARG NODE_ENV
+ENV NODE_ENV=$NODE_ENV
+
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build
 

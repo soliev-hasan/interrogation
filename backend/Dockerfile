@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:18-slim
 
 # Set working directory
 WORKDIR /app
@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including dev) for build
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -17,6 +17,9 @@ RUN mkdir -p uploads documents
 
 # Build TypeScript code
 RUN npm run build
+
+# Remove dev dependencies for a smaller production image
+RUN npm prune --production
 
 # Start the application
 CMD ["npm", "start"]

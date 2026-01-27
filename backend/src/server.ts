@@ -7,7 +7,6 @@ import multer from "multer";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import wav from "node-wav";
-import { pipeline } from "@xenova/transformers";
 
 import connectDB from "./config/database";
 import interrogationRoutes from "./routes/interrogations";
@@ -38,10 +37,17 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/documents", express.static(path.join(__dirname, "../documents")));
 
 // ---------------- Whisper setup ----------------
+const dynamicImport = new Function(
+  "specifier",
+  "return import(specifier);"
+) as (specifier: string) => Promise<any>;
+
 const upload = multer({ dest: "uploads/" });
 let whisper: any;
 
 async function loadModel() {
+  const { pipeline } = await dynamicImport("@xenova/transformers");
+
   whisper = await pipeline(
     "automatic-speech-recognition",
     "Xenova/whisper-medium",

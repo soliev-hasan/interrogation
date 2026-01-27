@@ -31,9 +31,6 @@ PY
 # Copy application code
 COPY . .
 
-# Expose FastAPI port
-EXPOSE 8000
-
 # Default command (can be overridden by docker-compose)
 CMD ["python", "app.py"]
 

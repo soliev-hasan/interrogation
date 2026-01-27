@@ -1,0 +1,85 @@
+networks:
+  default:
+    name: interrogation_network
+    external: true
+
+volumes:
+  letsencrypt_data:
+    external: true
+
+services:
+  traefik:
+    image: traefik:v2.9
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+
+      - --entrypoints.http.address=:80
+      - --entrypoints.https.address=:443
+      - --entrypoints.http.http.redirections.entryPoint.to=https
+      - --entrypoints.http.http.redirections.entryPoint.scheme=https
+      - --entrypoints.http.http.redirections.entrypoint.permanent=true
+
+      - --certificatesresolvers.resolver.acme.tlschallenge=true
+      - --certificatesresolvers.resolver.acme.email=codejoker97@gmail.com
+      - --certificatesresolvers.resolver.acme.storage=/letsencrypt/acme.json
+    labels:
+      - traefik.http.middlewares.redirect-to-non-www.redirectregex.regex=^https?://(?:www\\.)?(.+)
+      - traefik.http.middlewares.redirect-to-non-www.redirectregex.replacement=https://$${1}
+      - traefik.http.middlewares.redirect-to-non-www.redirectregex.permanent=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - letsencrypt_data:/letsencrypt
+
+  web:
+    container_name: "web"
+    restart: unless-stopped
+    build:
+      context: ../
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=$NODE_ENV
+        - VITE_API_BASE_URL=$VITE_API_BASE_URL
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lexact_web.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)
+      - traefik.http.routers.lexact_web.entrypoints=https
+      - traefik.http.routers.lexact_web.tls.certresolver=resolver
+      - traefik.http.services.lexact_web.loadbalancer.server.port=80
+    environment:
+      - NODE_ENV=$NODE_ENV
+      - VITE_API_BASE_URL=$VITE_API_BASE_URL
+    ports:
+      - "3000:3000"
+
+  node:
+    container_name: "node"
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.lexact_server.rule=Host(`${SERVER_DOMAIN}`)
+      - traefik.http.routers.lexact_server.entrypoints=https
+      - traefik.http.routers.lexact_server.tls.certresolver=resolver
+      - traefik.http.services.lexact_server.loadbalancer.server.port=${SERVER_PORT}
+    ports:
+      - "4001:4001"
+    env_file:
+      - .env
+
+  python:
+    container_name: "python"
+    build:
+      context: ../backend-py
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1

@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 import { upload } from "../utils/fileUpload";
 import Interrogation from "../models/InterrogationModel";
 import path from "path";
-import fetch from "node-fetch";
 import FormData from "form-data";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
+import { appConfig } from "../config/app";
 
 // Set ffmpeg path
 ffmpeg.setFfmpegPath(ffmpegStatic as string);
@@ -25,7 +25,7 @@ const convertToMp3 = (inputPath: string, outputPath: string): Promise<void> => {
 // Handle audio file upload
 export const uploadAudio = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   // Use multer upload middleware
   upload.single("audio")(req, res, async (err: any) => {
@@ -103,7 +103,7 @@ export const getAudio = async (req: Request, res: Response): Promise<void> => {
 // Transcribe audio using Python service
 export const transcribeAudio = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.file) {
@@ -116,14 +116,14 @@ export const transcribeAudio = async (
     await convertToMp3(req.file.path, mp3FilePath);
 
     // Forward the request to Python service
-    const pythonServiceUrl = "http://localhost:8000/transcribe";
+    const pythonServiceUrl = `${appConfig.pythonServiceUrl}/transcribe`;
 
     // Create form data to forward to Python service with MP3 file
     const form = new FormData();
     form.append("audio", fs.createReadStream(mp3FilePath), {
       filename: req.file.originalname.replace(
         path.extname(req.file.originalname),
-        ".mp3"
+        ".mp3",
       ),
       contentType: "audio/mp3",
     });
@@ -133,7 +133,10 @@ export const transcribeAudio = async (
     console.log("  Original name:", req.file.originalname);
     console.log(
       "  Converted to MP3 name:",
-      req.file.originalname.replace(path.extname(req.file.originalname), ".mp3")
+      req.file.originalname.replace(
+        path.extname(req.file.originalname),
+        ".mp3",
+      ),
     );
     console.log("  MIME type:", "audio/mp3");
     console.log("  File path:", mp3FilePath);
