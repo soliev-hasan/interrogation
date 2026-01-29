@@ -1,31 +1,16 @@
-import mongoose from "mongoose";
+import "reflect-metadata";
 
-const connectDB = async (): Promise<void> => {
-  try {
-    // Use MongoDB Atlas URI from environment variables, fallback to local MongoDB
-    const mongoUri =
-      process.env.MONGODB_URI || "mongodb://localhost:27017/mvd_db";
-    console.log(
-      "Attempting to connect to MongoDB with URI:",
-      mongoUri.split("?")[0]
-    ); // Hide query params for security
+import { DataSource } from "typeorm";
+import { InterrogationEntity, UserEntity } from "../entities";
+import { appConfig } from "./app";
 
-    const conn = await mongoose.connect(mongoUri);
-
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    console.log(`Database: ${conn.connection.name}`);
-
-    // Log connection status
-    console.log(`Connection state: ${mongoose.connection.readyState}`);
-  } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
-    console.error(
-      "Connection failed. Please check your MONGODB_URI in .env file."
-    );
-
-    // Exit process with failure code
-    process.exit(1);
-  }
-};
-
-export default connectDB;
+export const appDataSource = new DataSource({
+  type: "postgres",
+  host: appConfig.postgres.host,
+  port: appConfig.postgres.port,
+  username: appConfig.postgres.username,
+  password: appConfig.postgres.password,
+  database: appConfig.postgres.database,
+  entities: [UserEntity, InterrogationEntity],
+  synchronize: appConfig.postgres.synchronize,
+});

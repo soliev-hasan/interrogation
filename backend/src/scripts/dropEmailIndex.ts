@@ -1,33 +1,37 @@
-import dotenv from "dotenv";
-import connectDB from "../config/database";
-import User from "../models/UserModel";
+import { appDataSource } from "../config/database";
 
-// Load environment variables
-dotenv.config();
-
-const dropEmailIndex = async () => {
+const dropEmailUniqueIndex = async () => {
   try {
-    // Connect to database
-    await connectDB();
+    await appDataSource.initialize();
 
-    // Get the collection
-    const collection = User.collection;
+    // List indexes on users table
+    const indexes = await appDataSource.query(`
+      SELECT indexname, indexdef
+      FROM pg_indexes
+      WHERE tablename = 'users';
+    `);
 
-    // List all indexes
-    const indexes = await collection.indexes();
     console.log("Current indexes:");
     console.log(JSON.stringify(indexes, null, 2));
 
-    // Check if email_1 index exists and is unique
-    const emailIndex = indexes.find((index: any) => index.name === "email_1");
-    if (emailIndex && emailIndex.unique) {
-      console.log("Dropping unique index on email field...");
-      await collection.dropIndex("email_1");
-      console.log("Unique index on email field dropped successfully.");
-    } else {
+    // Typical TypeORM-generated unique index name
+    // It may differ depending on how the table was created
+    const emailIndex = indexes.find(
+      (i: any) =>
+        i.indexdef.includes("(email)") && i.indexdef.includes("UNIQUE"),
+    );
+
+    if (!emailIndex) {
       console.log("No unique index found on email field.");
+      process.exit(0);
     }
 
+    console.log(`Dropping unique index: ${emailIndex.indexname}`);
+    await appDataSource.query(
+      `DROP INDEX IF EXISTS "${emailIndex.indexname}";`,
+    );
+
+    console.log("Unique index on email field dropped successfully.");
     process.exit(0);
   } catch (error) {
     console.error("Error dropping email index:", error);
@@ -35,4 +39,4 @@ const dropEmailIndex = async () => {
   }
 };
 
-dropEmailIndex();
+dropEmailUniqueIndex();

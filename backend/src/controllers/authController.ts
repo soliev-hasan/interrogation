@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/UserModel";
+import { UserRepository } from "../repositories";
 
 // Secret key for JWT (using environment variable)
 const JWT_SECRET =
@@ -11,14 +11,7 @@ const JWT_SECRET =
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, email, password, role } = req.body;
-
-    // Check if user already exists
-    const existingUserQuery: any = { username };
-    if (email) {
-      existingUserQuery.$or = [{ email }, { username }];
-    }
-
-    const existingUser = await User.findOne(existingUserQuery);
+    const existingUser = await UserRepository.findByUsername(username);
     if (existingUser) {
       res.status(400).json({ message: "User already exists" });
       return;
@@ -29,27 +22,25 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create new user (email is now optional)
-    const newUser = new User({
+    const newUser = await UserRepository.save({
       username,
       email: email || "", // Make email optional
       password: hashedPassword,
       role: role || "investigator",
     });
 
-    await newUser.save();
-
     // Generate JWT token
     const token = jwt.sign(
-      { userId: newUser._id, role: newUser.role },
+      { userId: newUser.id, role: newUser.role },
       JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "24h" },
     );
 
     res.status(201).json({
       message: "User registered successfully",
       token,
       user: {
-        id: newUser._id,
+        id: newUser.id,
         username: newUser.username,
         email: newUser.email,
         role: newUser.role,
@@ -70,12 +61,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     let user;
     if (username && username.includes("@")) {
       // If username contains @, treat it as an email
-      user = await User.findOne({
-        $or: [{ email: username }, { username }],
+      user = await UserRepository.repo().findOne({
+        where: [{ email: username }, { username: username }],
       });
     } else {
       // Otherwise, treat it as a username
-      user = await User.findOne({ username });
+      user = await UserRepository.findByUsername(username);
     }
 
     if (!user) {
@@ -91,7 +82,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, {
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
       expiresIn: "24h",
     });
 
@@ -99,7 +90,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       message: "Login successful",
       token,
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         email: user.email,
         role: user.role,
@@ -114,11 +105,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 // Get current user profile
 export const getProfile = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const userId = (req as any).userId;
-    const user = await User.findById(userId);
+    const user = await UserRepository.findById(userId);
 
     if (!user) {
       res.status(404).json({ message: "User not found" });
@@ -126,7 +117,7 @@ export const getProfile = async (
     }
 
     res.status(200).json({
-      id: user._id,
+      id: user.id,
       username: user.username,
       email: user.email,
       role: user.role,

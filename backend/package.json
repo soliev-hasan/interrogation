@@ -30,12 +30,14 @@
     "form-data": "^4.0.5",
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
-    "mongodb": "^7.0.0",
-    "mongoose": "^9.0.0",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
     "node-wav": "^0.0.2",
-    "pizzip": "^3.2.0"
+    "pg": "8.17.2",
+    "pizzip": "^3.2.0",
+    "reflect-metadata": "0.2.2",
+    "sharp": "^0.34.5",
+    "typeorm": "0.3.28"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -43,7 +45,6 @@
     "@types/express": "^5.0.5",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/mongodb": "^4.0.6",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.10.1",
     "@types/node-fetch": "^2.6.13",

@@ -1,15 +1,15 @@
-import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import User from "../models/UserModel";
+import { Request, Response } from "express";
+import { UserRepository } from "../repositories";
 
 // Get all users (admin only)
 export const getAllUsers = async (
   _req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     // In a real application, we would exclude passwords from the response
-    const users = await User.find({}, "-password");
+    const users = await UserRepository.findAll(true);
     res.status(200).json(users);
   } catch (error) {
     console.error("Get users error:", error);
@@ -20,12 +20,11 @@ export const getAllUsers = async (
 // Get a specific user by ID (admin only)
 export const getUserById = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const id = req.params.id;
-    const user = await User.findById(id, "-password");
-
+    const id = req.params.id as string;
+    const user = await UserRepository.findById(id, true);
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
@@ -41,20 +40,13 @@ export const getUserById = async (
 // Create a new user (admin only)
 export const createUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { username, email, password, role } = req.body;
 
     // Build query for checking existing user
-    let existingUserQuery: any = { username };
-    if (email) {
-      existingUserQuery = {
-        $or: [{ email }, { username }],
-      };
-    }
-
-    const existingUser = await User.findOne(existingUserQuery);
+    const existingUser = await UserRepository.findByUsername(username);
     if (existingUser) {
       res.status(400).json({ message: "User already exists" });
       return;
@@ -65,17 +57,16 @@ export const createUser = async (
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create new user (email is now optional)
-    const newUser = new User({
+
+    const savedUser = await UserRepository.save({
       username,
       email: email || "", // Make email optional
       password: hashedPassword,
       role: role || "investigator",
     });
 
-    const savedUser = await newUser.save();
-
     // Exclude password from response
-    const { password: _, ...userWithoutPassword } = savedUser.toObject();
+    const { password: _, ...userWithoutPassword } = savedUser;
 
     res.status(201).json(userWithoutPassword);
   } catch (error) {
@@ -87,14 +78,13 @@ export const createUser = async (
 // Update a user (admin only)
 export const updateUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
     const { username, email, password, role } = req.body;
 
-    const user = await User.findById(id);
-
+    const user = await UserRepository.findById(id);
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
@@ -112,10 +102,10 @@ export const updateUser = async (
     if (role) user.role = role;
     user.updatedAt = new Date();
 
-    const updatedUser = await user.save();
+    const updatedUser = await UserRepository.update(id, user);
 
     // Exclude password from response
-    const { password: _, ...userWithoutPassword } = updatedUser.toObject();
+    const { password: _, ...userWithoutPassword } = updatedUser;
 
     res.status(200).json(userWithoutPassword);
   } catch (error) {
@@ -127,18 +117,11 @@ export const updateUser = async (
 // Delete a user (admin only)
 export const deleteUser = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const id = req.params.id;
-
-    const user = await User.findByIdAndDelete(id);
-
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
+    const id = req.params.id as string;
+    await UserRepository.delete(id);
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("Delete user error:", error);

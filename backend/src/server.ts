@@ -8,12 +8,12 @@ import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import wav from "node-wav";
 
-import connectDB from "./config/database";
 import interrogationRoutes from "./routes/interrogations";
 import authRoutes from "./routes/auth";
 import adminRoutes from "./routes/admin";
 import audioRoutes from "./routes/audio";
 import documentsRoutes from "./routes/documents";
+import { appDataSource } from "./config/database";
 
 // Set ffmpeg path
 if (!ffmpegPath) {
@@ -24,8 +24,7 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
+appDataSource.initialize();
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
@@ -39,7 +38,7 @@ app.use("/documents", express.static(path.join(__dirname, "../documents")));
 // ---------------- Whisper setup ----------------
 const dynamicImport = new Function(
   "specifier",
-  "return import(specifier);"
+  "return import(specifier);",
 ) as (specifier: string) => Promise<any>;
 
 const upload = multer({ dest: "uploads/" });
@@ -53,7 +52,7 @@ async function loadModel() {
     "Xenova/whisper-medium",
     {
       quantized: true,
-    }
+    },
   );
   console.log("Whisper Small Multilingual Loaded");
 }
@@ -100,7 +99,7 @@ app.post(
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
-  }
+  },
 );
 // ------------------------------------------------
 

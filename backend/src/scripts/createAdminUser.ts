@@ -1,18 +1,19 @@
-import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
-import connectDB from "../config/database";
-import User from "../models/UserModel";
+import { appDataSource } from "../config/database";
+import { UserEntity, UserRole } from "../entities";
 
-// Load environment variables
-dotenv.config();
-
+// Adjust this to your actual datasource config file if you already have one
 const createAdminUser = async () => {
   try {
-    // Connect to database
-    await connectDB();
-    
-    // Check if admin user already exists
-    const existingAdmin = await User.findOne({ email: "admin@mvd.ru" });
+    // Connect DB
+    await appDataSource.initialize();
+    const userRepo = appDataSource.getRepository(UserEntity);
+
+    // Check if admin exists
+    const existingAdmin = await userRepo.findOne({
+      where: { email: "admin@mvd.ru" },
+    });
+
     if (existingAdmin) {
       console.log("Admin user already exists:");
       console.log(`Username: ${existingAdmin.username}`);
@@ -20,27 +21,26 @@ const createAdminUser = async () => {
       console.log(`Role: ${existingAdmin.role}`);
       process.exit(0);
     }
-    
+
     // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash("admin123", saltRounds);
-    
+    const hashedPassword = await bcrypt.hash("admin123", 10);
+
     // Create admin user
-    const adminUser = new User({
+    const adminUser = userRepo.create({
       username: "admin",
       email: "admin@mvd.ru",
       password: hashedPassword,
-      role: "admin"
+      role: UserRole.ADMIN,
     });
-    
-    await adminUser.save();
-    
+
+    await userRepo.save(adminUser);
+
     console.log("Admin user created successfully:");
     console.log(`Username: ${adminUser.username}`);
     console.log(`Email: ${adminUser.email}`);
     console.log(`Role: ${adminUser.role}`);
     console.log("Password: admin123");
-    
+
     process.exit(0);
   } catch (error) {
     console.error("Error creating admin user:", error);

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { IInterrogation } from "../models/InterrogationModel";
+import { InterrogationEntity } from "../entities";
 
 // Create documents directory if it doesn't exist
 const documentsDir = path.join(__dirname, "../../documents");
@@ -13,7 +13,9 @@ if (!fs.existsSync(documentsDir)) {
  * @param interrogation The interrogation data
  * @returns Buffer containing the document
  */
-export const generateWordDocument = (interrogation: IInterrogation): Buffer => {
+export const generateWordDocument = (
+  interrogation: InterrogationEntity,
+): Buffer => {
   try {
     // Create a simple document content
     const content = `Отчет о допросе

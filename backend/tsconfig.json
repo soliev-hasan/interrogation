@@ -19,6 +19,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": true,
     "allowUnreachableCode": false,
+    "experimentalDecorators": true,
     "removeComments": true,
     "types": ["node"],
     "typeRoots": ["./node_modules/@types"]
