@@ -57,16 +57,20 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
 
-    // Find user by username or email
+    // Find user by username or email (explicitly include password field)
     let user;
     if (username && username.includes("@")) {
       // If username contains @, treat it as an email
       user = await UserRepository.repo().findOne({
         where: [{ email: username }, { username: username }],
+        select: ["id", "username", "email", "password", "role", "createdAt", "updatedAt"],
       });
     } else {
       // Otherwise, treat it as a username
-      user = await UserRepository.findByUsername(username);
+      user = await UserRepository.repo().findOne({
+        where: { username },
+        select: ["id", "username", "email", "password", "role", "createdAt", "updatedAt"],
+      });
     }
 
     if (!user) {
@@ -75,6 +79,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Check password
+    if (!user.password) {
+      res.status(400).json({ message: "Invalid credentials" });
+      return;
+    }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       res.status(400).json({ message: "Invalid credentials" });

@@ -57,7 +57,6 @@ async function loadModel() {
   console.log("Whisper Small Multilingual Loaded");
 }
 
-loadModel();
 
 app.post(
   "/api/transcribe",
