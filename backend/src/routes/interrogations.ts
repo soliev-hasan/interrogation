@@ -28,7 +28,6 @@ router.get("/:id", asyncHandler(getInterrogationById));
 // POST /api/interrogations - Create a new interrogation
 router.post("/", asyncHandler(createInterrogation));
 
-// PUT /api/interrogations/:id - Update an interrogation
 router.put("/:id", asyncHandler(updateInterrogation));
 
 // DELETE /api/interrogations/:id - Delete an interrogation

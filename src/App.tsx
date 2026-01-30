@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import * as api from "./services/api";
 import MessageModal from "./components/MessageModal";
 import LoadingSpinner from "./components/LoadingSpinner";
+import { API_BASE_URL } from "./services/api";
 
 // Add this interface for interrogation data
 interface InterrogationData {
@@ -18,7 +19,7 @@ interface InterrogationData {
 
 function App() {
   const [user, setUser] = useState<{
-    _id: string;
+    id: string;
     username: string;
     role: string;
   } | null>(null);
@@ -91,12 +92,12 @@ function App() {
 
     window.addEventListener(
       "refreshInterrogations",
-      handleRefreshInterrogations
+      handleRefreshInterrogations,
     );
     return () => {
       window.removeEventListener(
         "refreshInterrogations",
-        handleRefreshInterrogations
+        handleRefreshInterrogations,
       );
     };
   }, []);
@@ -124,7 +125,7 @@ function App() {
             message: "Выполняется вход... Пожалуйста, подождите.",
             type: "info",
           },
-        })
+        }),
       );
 
       const response = await api.authAPI.login(username, password);
@@ -140,7 +141,7 @@ function App() {
             message: "Вы успешно вошли в систему!",
             type: "success",
           },
-        })
+        }),
       );
     } catch (error) {
       console.error("Ошибка входа:", error);
@@ -151,7 +152,7 @@ function App() {
             message: "Пожалуйста, проверьте свои учетные данные.",
             type: "error",
           },
-        })
+        }),
       );
     }
   };
@@ -347,7 +348,7 @@ function Dashboard() {
               interrogationDate.getMonth() === thisMonth &&
               interrogationDate.getFullYear() === thisYear
             );
-          }
+          },
         );
 
         setMonthlyCount(monthlyInterrogations.length);
@@ -429,25 +430,14 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
               message: "Требуется вход в систему",
               type: "error",
             },
-          })
+          }),
         );
         return;
       }
 
       const data = await api.interrogationAPI.getAll(token);
-
-      // Map _id to id for consistency
-      const mappedData = data.map((item: any) => {
-        // Create a new object with id field and all other properties
-        const newItem = {
-          ...item,
-          id: item._id,
-        };
-        return newItem;
-      });
-
       // Sort by date descending (newest first)
-      const sortedData = mappedData.sort((a: any, b: any) => {
+      const sortedData = data.sort((a: any, b: any) => {
         const dateA = new Date(a.date || 0).getTime();
         const dateB = new Date(b.date || 0).getTime();
         return dateB - dateA;
@@ -467,7 +457,7 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
               "Не удалось загрузить допросы: " + (error as Error).message,
             type: "error",
           },
-        })
+        }),
       );
     } finally {
       setLoading(false);
@@ -479,7 +469,8 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
   }, [fetchInterrogations, refreshKey]);
 
   const handleViewInterrogation = async (interrogationId: string) => {
-    // Debugging: log the ID being passed
+    console.log("interrogationId", interrogationId);
+
     //("Attempting to view interrogation with ID:", interrogationId);
 
     // Check if ID is valid
@@ -492,7 +483,7 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
             message: "Неверный ID допроса",
             type: "error",
           },
-        })
+        }),
       );
       return;
     }
@@ -507,7 +498,7 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
       //("Interrogation data keys:", Object.keys(data));
 
       // Check if data has _id or id field and ensure it's properly mapped
-      const id = data._id || data.id || interrogationId;
+      const id = data.id || data.id || interrogationId;
 
       // Ensure the returned data has the correct id field
       const mappedData = {
@@ -525,10 +516,11 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
             message: "Не удалось загрузить допрос",
             type: "error",
           },
-        })
+        }),
       );
     }
   };
+  console.log("interrogations", interrogations);
 
   const closeViewInterrogation = () => {
     setViewingInterrogation(null);
@@ -662,6 +654,8 @@ function ViewInterrogation({
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [loadingDocument, setLoadingDocument] = useState(false);
 
+  console.log("audioUrl", audioUrl);
+
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -709,7 +703,7 @@ function ViewInterrogation({
             formattedPath = "/" + formattedPath;
           }
 
-          fullAudioUrl = `https://хадж-умра.рф${formattedPath}`;
+          fullAudioUrl = `${API_BASE_URL.replace("/api", "")}${formattedPath}`;
         }
         setAudioUrl(fullAudioUrl);
       } else {
@@ -778,7 +772,7 @@ function ViewInterrogation({
             if (!formattedPath.startsWith("/")) {
               formattedPath = "/" + formattedPath;
             }
-            fullAudioUrl = `https://хадж-умра.рф${formattedPath}`;
+            fullAudioUrl = `${API_BASE_URL.replace("/api", "")}${formattedPath}`;
           }
           setAudioUrl(fullAudioUrl);
         } catch (error) {
@@ -809,7 +803,7 @@ function ViewInterrogation({
               message: "Вы должны войти в систему, чтобы скачать документ",
               type: "error",
             },
-          })
+          }),
         );
         return;
       }
@@ -817,12 +811,12 @@ function ViewInterrogation({
       // Generate document on the backend
       const documentResult = await api.documentAPI.generate(
         interrogation.id,
-        token
+        token,
       );
 
       // Download the document
       const downloadResult = await api.documentAPI.download(
-        documentResult.filename
+        documentResult.filename,
       );
 
       // Create download link
@@ -840,7 +834,7 @@ function ViewInterrogation({
             message: "Документ успешно скачан!",
             type: "success",
           },
-        })
+        }),
       );
     } catch (error) {
       console.error("Ошибка скачивания документа:", error);
@@ -851,7 +845,7 @@ function ViewInterrogation({
             message: "Не удалось скачать документ",
             type: "error",
           },
-        })
+        }),
       );
     } finally {
       setLoadingDocument(false);
@@ -932,7 +926,7 @@ function ViewInterrogation({
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
                 onClick={() => {
                   const audioElement = document.querySelector(
-                    "audio"
+                    "audio",
                   ) as HTMLAudioElement;
                   if (audioElement) {
                     audioElement.play();
@@ -1025,8 +1019,8 @@ function RecordInterrogation() {
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/ogg";
+          ? "audio/webm"
+          : "audio/ogg";
 
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       const audioChunks: Blob[] = [];
@@ -1100,7 +1094,7 @@ function RecordInterrogation() {
                     }`,
                     type: "success",
                   },
-                })
+                }),
               );
             } else {
               const errorText = await response.text();
@@ -1120,7 +1114,7 @@ function RecordInterrogation() {
                   message: "Не удалось транскрибировать аудио",
                   type: "error",
                 },
-              })
+              }),
             );
           }
         }
@@ -1219,7 +1213,7 @@ function RecordInterrogation() {
                               "Не удалось перезапустить распознавание речи",
                             type: "error",
                           },
-                        })
+                        }),
                       );
                     }
                   }
@@ -1248,7 +1242,7 @@ function RecordInterrogation() {
                               "Не удалось перезапустить распознавание речи",
                             type: "error",
                           },
-                        })
+                        }),
                       );
                     }
                   }
@@ -1267,7 +1261,7 @@ function RecordInterrogation() {
                     "Распознавание речи активно. Говорите, чтобы начать запись.",
                   type: "info",
                 },
-              })
+              }),
             );
           };
 
@@ -1283,7 +1277,7 @@ function RecordInterrogation() {
                   "Web Speech API не поддерживается в этом браузере. Расшифровка речи недоступна.",
                 type: "info",
               },
-            })
+            }),
           );
         }
       } else {
@@ -1295,7 +1289,7 @@ function RecordInterrogation() {
               message: "Расшифровка будет выполнена после остановки записи.",
               type: "info",
             },
-          })
+          }),
         );
       }
 
@@ -1362,7 +1356,7 @@ function RecordInterrogation() {
                   console.error(
                     "Speech recognition error (from recreated):",
                     event.error,
-                    event
+                    event,
                   );
                 };
 
@@ -1388,7 +1382,7 @@ function RecordInterrogation() {
               "Не удалось получить доступ к микрофону. Пожалуйста, проверьте разрешения.",
             type: "error",
           },
-        })
+        }),
       );
     }
   };
@@ -1431,7 +1425,7 @@ function RecordInterrogation() {
             message: "Запись успешно остановлена",
             type: "success",
           },
-        })
+        }),
       );
     }
   };
@@ -1562,7 +1556,7 @@ function RecordInterrogation() {
               message: "Пожалуйста, введите название допроса",
               type: "error",
             },
-          })
+          }),
         );
         return;
       }
@@ -1575,7 +1569,7 @@ function RecordInterrogation() {
               message: "Пожалуйста, введите имя подозреваемого",
               type: "error",
             },
-          })
+          }),
         );
         return;
       }
@@ -1588,7 +1582,7 @@ function RecordInterrogation() {
               message: "Пожалуйста, введите имя следователя",
               type: "error",
             },
-          })
+          }),
         );
         return;
       }
@@ -1601,7 +1595,7 @@ function RecordInterrogation() {
             message: "Документ создается... Это может занять несколько секунд.",
             type: "info",
           },
-        })
+        }),
       );
 
       // Create a temporary interrogation object for document generation
@@ -1651,7 +1645,7 @@ ${tempInterrogationData.transcript}
             message: "Документ успешно создан и скачан!",
             type: "success",
           },
-        })
+        }),
       );
     } catch (error) {
       console.error("Ошибка создания документа:", error);
@@ -1662,7 +1656,7 @@ ${tempInterrogationData.transcript}
             message: "Не удалось создать документ",
             type: "error",
           },
-        })
+        }),
       );
     }
   };
@@ -1676,7 +1670,7 @@ ${tempInterrogationData.transcript}
             message: "Введите название допроса",
             type: "error",
           },
-        })
+        }),
       );
       return;
     }
@@ -1694,7 +1688,7 @@ ${tempInterrogationData.transcript}
             message: "Создание допроса... Пожалуйста, подождите.",
             type: "info",
           },
-        })
+        }),
       );
 
       // Create the interrogation first
@@ -1707,13 +1701,13 @@ ${tempInterrogationData.transcript}
           officer: interrogationData.officer,
           transcript: interrogationData.transcript, // Use the transcript from the frontend
         },
-        token
+        token,
       );
 
       // Validate that we received a proper response with an ID
       if (!interrogationResponse || !interrogationResponse.id) {
         throw new Error(
-          "Failed to create interrogation or missing ID in response"
+          "Failed to create interrogation or missing ID in response",
         );
       }
 
@@ -1727,7 +1721,7 @@ ${tempInterrogationData.transcript}
         const audioFile = new File(
           [audioBlob],
           `interrogation-${interrogationResponse.id}.wav`,
-          { type: "audio/wav" }
+          { type: "audio/wav" },
         );
 
         // Show loading message for transcription
@@ -1739,7 +1733,7 @@ ${tempInterrogationData.transcript}
                 "Выполняется транскрипция аудио... Пожалуйста, подождите.",
               type: "info",
             },
-          })
+          }),
         );
 
         // Transcribe the audio using our new Python service
@@ -1747,7 +1741,7 @@ ${tempInterrogationData.transcript}
           // @ts-ignore
           const transcriptionResponse = await api.audioAPI.transcribe(
             audioFile,
-            "ru-RU"
+            "ru-RU",
           );
           transcript = transcriptionResponse.transcription || transcript;
         } catch (transcriptionError) {
@@ -1757,7 +1751,7 @@ ${tempInterrogationData.transcript}
         // Validate that we have a valid interrogation ID before uploading audio
         if (!interrogationResponse || !interrogationResponse.id) {
           throw new Error(
-            "Invalid interrogation response or missing ID for audio upload"
+            "Invalid interrogation response or missing ID for audio upload",
           );
         }
 
@@ -1769,14 +1763,14 @@ ${tempInterrogationData.transcript}
               message: "Загрузка аудиофайла... Пожалуйста, подождите.",
               type: "info",
             },
-          })
+          }),
         );
 
         const audioResponse = await api.audioAPI.upload(
           interrogationResponse.id,
           audioFile,
           transcript, // Pass the actual transcript (either transcribed or manual)
-          token
+          token,
         );
 
         // Extract transcript and audio file path from response
@@ -1805,12 +1799,12 @@ ${tempInterrogationData.transcript}
             message: "Создание документа Word... Пожалуйста, подождите.",
             type: "info",
           },
-        })
+        }),
       );
 
       const wordResponse = await api.documentAPI.generate(
         interrogationResponse.id,
-        token
+        token,
       );
 
       // Update the interrogation with the Word document path
@@ -1825,14 +1819,14 @@ ${tempInterrogationData.transcript}
 
       if (!wordResponse.documentPath) {
         throw new Error(
-          "Document generation failed - missing document path in response"
+          "Document generation failed - missing document path in response",
         );
       }
 
       await api.interrogationAPI.update(
         interrogationResponse.id,
         { wordDocumentPath: wordResponse.documentPath },
-        token
+        token,
       );
 
       // Reset form
@@ -1866,7 +1860,7 @@ ${tempInterrogationData.transcript}
             message: "Допрос успешно сохранен",
             type: "success",
           },
-        })
+        }),
       );
     } catch (error) {
       console.error("Ошибка при сохранении допроса:", error);
@@ -1877,7 +1871,7 @@ ${tempInterrogationData.transcript}
             message: "Не удалось сохранить допрос",
             type: "error",
           },
-        })
+        }),
       );
     } finally {
       setIsSaving(false);
@@ -1895,7 +1889,7 @@ ${tempInterrogationData.transcript}
               "Перезапуск распознавания речи доступен только для русского языка",
             type: "info",
           },
-        })
+        }),
       );
       return;
     }
@@ -1912,7 +1906,7 @@ ${tempInterrogationData.transcript}
             message: "Web Speech API не поддерживается в этом браузере",
             type: "error",
           },
-        })
+        }),
       );
       return;
     }
@@ -1925,7 +1919,7 @@ ${tempInterrogationData.transcript}
             message: "Запись не активна",
             type: "error",
           },
-        })
+        }),
       );
       return;
     }
@@ -1973,7 +1967,7 @@ ${tempInterrogationData.transcript}
         console.error(
           "Speech recognition error (manual restart):",
           event.error,
-          event
+          event,
         );
         // window.dispatchEvent(
         //   new CustomEvent("showMessage", {
@@ -1996,7 +1990,7 @@ ${tempInterrogationData.transcript}
               } catch (e) {
                 console.error(
                   "Failed to automatically restart speech recognition:",
-                  e
+                  e,
                 );
               }
             }
@@ -2012,7 +2006,7 @@ ${tempInterrogationData.transcript}
               message: "Распознавание речи перезапущено",
               type: "success",
             },
-          })
+          }),
         );
       };
 
@@ -2027,7 +2021,7 @@ ${tempInterrogationData.transcript}
             message: "Не удалось перезапустить распознавание речи",
             type: "error",
           },
-        })
+        }),
       );
     }
   };
@@ -2284,7 +2278,7 @@ ${tempInterrogationData.transcript}
                   message: "Операция отменена",
                   type: "info",
                 },
-              })
+              }),
             );
           }}
         >
@@ -2298,7 +2292,7 @@ ${tempInterrogationData.transcript}
 function UserProfile({
   user,
 }: {
-  user: { _id: string; username: string; role: string };
+  user: { id: string; username: string; role: string };
 }) {
   return (
     <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-md">
@@ -2307,7 +2301,7 @@ function UserProfile({
       </h2>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-4 border-b border-gray-200">
-          <span className="flex-1 text-gray-800 break-all">{user._id}</span>
+          <span className="flex-1 text-gray-800 break-all">{user.id}</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-4 border-b border-gray-200">
           <label className="font-bold text-gray-600 w-full sm:w-40">
@@ -2351,7 +2345,7 @@ function AdminDashboard() {
               message: "Не удалось загрузить пользователей",
               type: "error",
             },
-          })
+          }),
         );
       } finally {
         setLoading(false);
@@ -2380,7 +2374,7 @@ function AdminDashboard() {
         await api.adminAPI.deleteUser(userId, token);
 
         // Update the users list
-        setUsers(users.filter((user) => user._id !== userId));
+        setUsers(users.filter((user) => user.id !== userId));
 
         window.dispatchEvent(
           new CustomEvent("showMessage", {
@@ -2389,7 +2383,7 @@ function AdminDashboard() {
               message: "Пользователь успешно удален",
               type: "success",
             },
-          })
+          }),
         );
       } catch (error) {
         console.error("Ошибка при удалении пользователя:", error);
@@ -2400,7 +2394,7 @@ function AdminDashboard() {
               message: "Не удалось удалить пользователя",
               type: "error",
             },
-          })
+          }),
         );
       }
     }
@@ -2414,14 +2408,14 @@ function AdminDashboard() {
       if (editingUser) {
         // Update existing user
         const updatedUser = await api.adminAPI.updateUser(
-          editingUser._id,
+          editingUser.id,
           userData,
-          token
+          token,
         );
         setUsers(
           users.map((user) =>
-            user._id === editingUser._id ? updatedUser : user
-          )
+            user.id === editingUser.id ? updatedUser : user,
+          ),
         );
         window.dispatchEvent(
           new CustomEvent("showMessage", {
@@ -2430,7 +2424,7 @@ function AdminDashboard() {
               message: "Пользователь успешно обновлен",
               type: "success",
             },
-          })
+          }),
         );
       } else {
         // Create new user
@@ -2443,7 +2437,7 @@ function AdminDashboard() {
               message: "Пользователь успешно создан",
               type: "success",
             },
-          })
+          }),
         );
       }
 
@@ -2459,7 +2453,7 @@ function AdminDashboard() {
               "Не удалось сохранить пользователя: " + (error as Error).message,
             type: "error",
           },
-        })
+        }),
       );
     }
   };
@@ -2477,7 +2471,7 @@ function AdminDashboard() {
               message: "Требуется вход в систему",
               type: "error",
             },
-          })
+          }),
         );
         return;
       }
@@ -2489,7 +2483,7 @@ function AdminDashboard() {
         // Create a new object with id field and all other properties
         const newItem = {
           ...item,
-          id: item._id,
+          id: item.id,
         };
         return newItem;
       });
@@ -2514,7 +2508,7 @@ function AdminDashboard() {
               "Не удалось загрузить допросы: " + (error as Error).message,
             type: "error",
           },
-        })
+        }),
       );
     } finally {
       setLoading(false);
@@ -2571,7 +2565,7 @@ function AdminDashboard() {
                 </div>
                 {users.map((user) => (
                   <div
-                    key={user._id}
+                    key={user.id}
                     className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-0 p-4 border-b border-gray-200 last:border-b-0 sm:items-center"
                   >
                     <div className="sm:contents">
@@ -2603,7 +2597,7 @@ function AdminDashboard() {
                         </button>
                         <button
                           className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
-                          onClick={() => handleDeleteUser(user._id)}
+                          onClick={() => handleDeleteUser(user.id)}
                         >
                           Удалить
                         </button>

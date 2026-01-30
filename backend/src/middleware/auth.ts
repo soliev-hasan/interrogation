@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import User from "../models/UserModel";
+import { UserRepository } from "../repositories/index";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "your-secret-key-change-this-in-production";
@@ -13,7 +13,7 @@ export interface AuthRequest extends Request {
 export const authenticateToken = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
@@ -30,7 +30,7 @@ export const authenticateToken = async (
     };
 
     // Check if user exists in database
-    const user = await User.findById(decoded.userId);
+    const user = await UserRepository.findById(decoded.userId);
     if (!user) {
       res.status(401).json({ message: "Invalid token" });
       return;

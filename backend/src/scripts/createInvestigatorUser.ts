@@ -1,18 +1,18 @@
-import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
-import connectDB from "../config/database";
-import User from "../models/UserModel";
-
-// Load environment variables
-dotenv.config();
+import { appDataSource } from "../config/database";
+import { UserEntity, UserRole } from "../entities";
 
 const createInvestigatorUser = async () => {
   try {
-    // Connect to database
-    await connectDB();
-    
-    // Check if investigator user already exists
-    const existingInvestigator = await User.findOne({ email: "investigator@mvd.ru" });
+    // Connect DB
+    await appDataSource.initialize();
+    const userRepo = appDataSource.getRepository(UserEntity);
+
+    // Check if investigator already exists
+    const existingInvestigator = await userRepo.findOne({
+      where: { email: "investigator@mvd.ru" },
+    });
+
     if (existingInvestigator) {
       console.log("Investigator user already exists:");
       console.log(`Username: ${existingInvestigator.username}`);
@@ -20,27 +20,26 @@ const createInvestigatorUser = async () => {
       console.log(`Role: ${existingInvestigator.role}`);
       process.exit(0);
     }
-    
+
     // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash("investigator123", saltRounds);
-    
+    const hashedPassword = await bcrypt.hash("investigator123", 10);
+
     // Create investigator user
-    const investigatorUser = new User({
+    const investigatorUser = userRepo.create({
       username: "investigator",
       email: "investigator@mvd.ru",
       password: hashedPassword,
-      role: "investigator"
+      role: UserRole.INVESTIGATOR,
     });
-    
-    await investigatorUser.save();
-    
+
+    await userRepo.save(investigatorUser);
+
     console.log("Investigator user created successfully:");
     console.log(`Username: ${investigatorUser.username}`);
     console.log(`Email: ${investigatorUser.email}`);
     console.log(`Role: ${investigatorUser.role}`);
     console.log("Password: investigator123");
-    
+
     process.exit(0);
   } catch (error) {
     console.error("Error creating investigator user:", error);

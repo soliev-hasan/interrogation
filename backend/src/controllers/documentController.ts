@@ -1,16 +1,18 @@
 import { Request, Response } from "express";
-import Interrogation from "../models/InterrogationModel";
+import { InterrogationRepository } from "../repositories";
 
 // Generate Word document for an interrogation
 export const generateDocument = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const interrogationId = req.params.id;
+    const interrogationId = req.params.id as string;
 
     // Find the interrogation
-    const interrogation = await Interrogation.findById(interrogationId);
+    const interrogation = await InterrogationRepository.repo().findOneBy({
+      id: interrogationId,
+    });
 
     if (!interrogation) {
       res.status(404).json({ message: "Interrogation not found" });
@@ -49,7 +51,10 @@ export const generateDocument = async (
 
     // Update the interrogation with the document path
     interrogation.wordDocumentPath = documentPath;
-    await interrogation.save();
+    await InterrogationRepository.repo().update(
+      interrogation.id,
+      interrogation,
+    );
 
     res.status(200).json({
       message: "Document generated successfully",
@@ -66,10 +71,10 @@ export const generateDocument = async (
 // Download Word document
 export const downloadDocument = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const filename = req.params.filename;
+    const filename = req.params.filename as string;
     const path = require("path");
     const filePath = path.join(__dirname, "../../documents", filename);
 
@@ -84,16 +89,16 @@ export const downloadDocument = async (
     if (filename.endsWith(".docx")) {
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${filename}"`
+        `attachment; filename="${filename}"`,
       );
       res.setHeader(
         "Content-Type",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       );
     } else {
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${filename}"`
+        `attachment; filename="${filename}"`,
       );
       res.setHeader("Content-Type", "text/plain");
     }

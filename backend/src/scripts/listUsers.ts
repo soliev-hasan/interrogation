@@ -1,29 +1,28 @@
-import dotenv from "dotenv";
-import connectDB from "../config/database";
-import User from "../models/UserModel";
-
-// Load environment variables
-dotenv.config();
+import { appDataSource } from "../config/database";
+import { UserEntity } from "../entities";
 
 const listUsers = async () => {
   try {
-    // Connect to database
-    await connectDB();
-    
-    // Get all users
-    const users = await User.find({}, '-password'); // Exclude passwords
-    
+    await appDataSource.initialize();
+    const userRepo = appDataSource.getRepository(UserEntity);
+
+    // Password is excluded automatically because of `select: false`
+    const users = await userRepo.find({
+      order: { createdAt: "DESC" },
+    });
+
     console.log("Users in database:");
     console.log("==================");
-    users.forEach(user => {
-      console.log(`ID: ${user._id}`);
+
+    users.forEach((user) => {
+      console.log(`ID: ${user.id}`);
       console.log(`Username: ${user.username}`);
-      console.log(`Email: ${user.email}`);
+      console.log(`Email: ${user.email ?? "N/A"}`);
       console.log(`Role: ${user.role}`);
       console.log(`Created: ${user.createdAt}`);
       console.log("------------------");
     });
-    
+
     process.exit(0);
   } catch (error) {
     console.error("Error listing users:", error);

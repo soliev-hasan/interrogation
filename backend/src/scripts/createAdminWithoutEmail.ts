@@ -1,18 +1,16 @@
-import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
-import connectDB from "../config/database";
-import User from "../models/UserModel";
-
-// Load environment variables
-dotenv.config();
+import { appDataSource } from "../config/database";
+import { UserEntity, UserRole } from "../entities";
 
 const createAdminWithoutEmail = async () => {
   try {
-    // Connect to database
-    await connectDB();
+    // Connect DB
+    await appDataSource.initialize();
+    const userRepo = appDataSource.getRepository(UserEntity);
 
-    // Get username and password from command line arguments
+    // CLI args: node script.js <username> <password>
     const args = process.argv.slice(2);
+
     let username = "admin2";
     let password = "admin123";
 
@@ -21,29 +19,31 @@ const createAdminWithoutEmail = async () => {
       password = args[1];
     }
 
-    // Check if admin user already exists
-    const existingAdmin = await User.findOne({ username });
+    // Check if admin already exists
+    const existingAdmin = await userRepo.findOne({
+      where: { username },
+    });
+
     if (existingAdmin) {
       console.log(`Admin user with username '${username}' already exists:`);
       console.log(`Username: ${existingAdmin.username}`);
-      console.log(`Email: ${existingAdmin.email || "Not set"}`);
+      console.log(`Email: ${existingAdmin.email ?? "Not set"}`);
       console.log(`Role: ${existingAdmin.role}`);
       process.exit(0);
     }
 
     // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create admin user without email
-    const adminUser = new User({
-      username: username,
-      email: `${username}@mvd.local`, // Unique email for each admin
+    // Create admin user
+    const adminUser = userRepo.create({
+      username,
+      email: `${username}@mvd.local`, // unique placeholder email
       password: hashedPassword,
-      role: "admin",
+      role: UserRole.ADMIN,
     });
 
-    await adminUser.save();
+    await userRepo.save(adminUser);
 
     console.log("Admin user created successfully:");
     console.log(`Username: ${adminUser.username}`);

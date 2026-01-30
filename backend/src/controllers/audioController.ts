@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { upload } from "../utils/fileUpload";
-import Interrogation from "../models/InterrogationModel";
 import path from "path";
 import FormData from "form-data";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
 import { appConfig } from "../config/app";
+import { InterrogationRepository } from "../repositories";
 
 // Set ffmpeg path
 ffmpeg.setFfmpegPath(ffmpegStatic as string);
@@ -46,10 +46,12 @@ export const uploadAudio = async (
 
     try {
       // Get interrogation ID from request parameters
-      const interrogationId = req.params.id;
+      const interrogationId = req.params.id as string;
 
       // Find the interrogation
-      const interrogation = await Interrogation.findById(interrogationId);
+      const interrogation = await InterrogationRepository.repo().findOneBy({
+        id: interrogationId,
+      });
 
       if (!interrogation) {
         res.status(404).json({ message: "Interrogation not found" });
@@ -72,7 +74,10 @@ export const uploadAudio = async (
       interrogation.audioFilePath = `/uploads/${req.file.filename}`;
       interrogation.transcript = transcript;
 
-      await interrogation.save();
+      await InterrogationRepository.repo().update(
+        interrogation.id,
+        interrogation,
+      );
 
       res.status(200).json({
         message: "Audio file uploaded and transcribed successfully",
@@ -90,7 +95,7 @@ export const uploadAudio = async (
 // Get audio file
 export const getAudio = async (req: Request, res: Response): Promise<void> => {
   try {
-    const filename = req.params.filename;
+    const filename = req.params.filename as string;
     // Serve the actual audio file
     const filePath = path.join(__dirname, "../../uploads", filename);
     res.sendFile(filePath);

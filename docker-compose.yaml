@@ -29,18 +29,44 @@ services:
   #   networks:
   #     - interrogation_network
 
-  python:
-    container_name: "python"
-    build:
-      context: ./backend-py
-      dockerfile: Dockerfile
+  # python:
+  #   container_name: "python"
+  #   build:
+  #     context: ./backend-py
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8000:8000"
+  #   networks:
+  #     - interrogation_network
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+
+  postgres:
+    container_name: "postgres"
+    image: postgres:14-alpine
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${POSTGRES_PORT}:5432"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U $POSTGRES_USERNAME -d $POSTGRES_DATABASE"]
+      interval: 5s
+      retries: 5
+      start_period: 5s
+    environment:
+      POSTGRES_USER: $POSTGRES_USERNAME
+      POSTGRES_DB: $POSTGRES_DATABASE
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     networks:
       - interrogation_network
-    environment:
-      - PYTHONUNBUFFERED=1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+    name: postgres_data
+    driver: local
 
 networks:
   interrogation_network:
