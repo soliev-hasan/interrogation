@@ -69,8 +69,8 @@ export const interrogationAPI = {
     const result = await response.json();
 
     // Map _id to id for consistency with frontend expectations
-    if (result && result._id) {
-      result.id = result._id;
+    if (result && result.id) {
+      result.id = result.id;
     }
 
     return result;
@@ -93,8 +93,8 @@ export const interrogationAPI = {
     const result = await response.json();
 
     // Map _id to id for consistency with frontend expectations
-    if (result && result._id) {
-      result.id = result._id;
+    if (result && result.id) {
+      result.id = result.id;
     }
 
     return result;
@@ -117,8 +117,8 @@ export const interrogationAPI = {
     const result = await response.json();
 
     // Map _id to id for consistency with frontend expectations
-    if (result && result._id) {
-      result.id = result._id;
+    if (result && result.id) {
+      result.id = result.id;
     }
 
     return result;

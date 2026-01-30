@@ -19,7 +19,7 @@ interface InterrogationData {
 
 function App() {
   const [user, setUser] = useState<{
-    _id: string;
+    id: string;
     username: string;
     role: string;
   } | null>(null);
@@ -498,7 +498,7 @@ function InterrogationsList({ refreshKey }: { refreshKey?: number }) {
       //("Interrogation data keys:", Object.keys(data));
 
       // Check if data has _id or id field and ensure it's properly mapped
-      const id = data._id || data.id || interrogationId;
+      const id = data.id || data.id || interrogationId;
 
       // Ensure the returned data has the correct id field
       const mappedData = {
@@ -2292,7 +2292,7 @@ ${tempInterrogationData.transcript}
 function UserProfile({
   user,
 }: {
-  user: { _id: string; username: string; role: string };
+  user: { id: string; username: string; role: string };
 }) {
   return (
     <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-md">
@@ -2301,7 +2301,7 @@ function UserProfile({
       </h2>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-4 border-b border-gray-200">
-          <span className="flex-1 text-gray-800 break-all">{user._id}</span>
+          <span className="flex-1 text-gray-800 break-all">{user.id}</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-4 border-b border-gray-200">
           <label className="font-bold text-gray-600 w-full sm:w-40">
@@ -2374,7 +2374,7 @@ function AdminDashboard() {
         await api.adminAPI.deleteUser(userId, token);
 
         // Update the users list
-        setUsers(users.filter((user) => user._id !== userId));
+        setUsers(users.filter((user) => user.id !== userId));
 
         window.dispatchEvent(
           new CustomEvent("showMessage", {
@@ -2408,13 +2408,13 @@ function AdminDashboard() {
       if (editingUser) {
         // Update existing user
         const updatedUser = await api.adminAPI.updateUser(
-          editingUser._id,
+          editingUser.id,
           userData,
           token,
         );
         setUsers(
           users.map((user) =>
-            user._id === editingUser._id ? updatedUser : user,
+            user.id === editingUser.id ? updatedUser : user,
           ),
         );
         window.dispatchEvent(
@@ -2483,7 +2483,7 @@ function AdminDashboard() {
         // Create a new object with id field and all other properties
         const newItem = {
           ...item,
-          id: item._id,
+          id: item.id,
         };
         return newItem;
       });
@@ -2565,7 +2565,7 @@ function AdminDashboard() {
                 </div>
                 {users.map((user) => (
                   <div
-                    key={user._id}
+                    key={user.id}
                     className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-0 p-4 border-b border-gray-200 last:border-b-0 sm:items-center"
                   >
                     <div className="sm:contents">
@@ -2597,7 +2597,7 @@ function AdminDashboard() {
                         </button>
                         <button
                           className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
-                          onClick={() => handleDeleteUser(user._id)}
+                          onClick={() => handleDeleteUser(user.id)}
                         >
                           Удалить
                         </button>
