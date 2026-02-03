@@ -71,7 +71,7 @@ services:
       - traefik.http.routers.lexact_server.tls.certresolver=resolver
       - traefik.http.services.lexact_server.loadbalancer.server.port=${SERVER_PORT}
     ports:
-      - "4001:4001"
+      - "${SERVER_PORT}:${SERVER_PORT}"
     env_file:
       - .env
 
@@ -102,7 +102,5 @@ services:
       POSTGRES_USER: $POSTGRES_USERNAME
       POSTGRES_DB: $POSTGRES_DATABASE
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-    networks:
-      - interrogation_network
     volumes:
       - postgres_data:/var/lib/postgresql/data
