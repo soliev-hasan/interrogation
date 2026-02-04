@@ -16,31 +16,32 @@ services:
   #   networks:
   #     - interrogation_network
 
-  # node:
-  #   container_name: "node"
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   restart: unless-stopped
-  #   ports:
-  #     - "4001:4001"
-  #   env_file:
-  #     - .env
-  #   networks:
-  #     - interrogation_network
+  node:
+    container_name: "node"
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    env_file:
+      - .env
+    networks:
+      - interrogation_network
 
-  # python:
-  #   container_name: "python"
-  #   build:
-  #     context: ./backend-py
-  #     dockerfile: Dockerfile
-  #   restart: unless-stopped
-  #   ports:
-  #     - "8000:8000"
-  #   networks:
-  #     - interrogation_network
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
+  python:
+    container_name: "python"
+    # build:
+    #   context: ./backend-py
+    #   dockerfile: Dockerfile
+    image: interrogation-python:latest
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - interrogation_network
+    environment:
+      - PYTHONUNBUFFERED=1
 
   postgres:
     container_name: "postgres"

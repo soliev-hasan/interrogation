@@ -2,11 +2,8 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-import fs from "fs";
-import multer from "multer";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
-import wav from "node-wav";
 
 import interrogationRoutes from "./routes/interrogations";
 import authRoutes from "./routes/auth";
@@ -34,73 +31,6 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/documents", express.static(path.join(__dirname, "../documents")));
-
-// ---------------- Whisper setup ----------------
-const dynamicImport = new Function(
-  "specifier",
-  "return import(specifier);",
-) as (specifier: string) => Promise<any>;
-
-const upload = multer({ dest: "uploads/" });
-let whisper: any;
-
-async function loadModel() {
-  const { pipeline } = await dynamicImport("@xenova/transformers");
-
-  whisper = await pipeline(
-    "automatic-speech-recognition",
-    "Xenova/whisper-medium",
-    {
-      quantized: true,
-    },
-  );
-  console.log("Whisper Small Multilingual Loaded");
-}
-
-
-app.post(
-  "/api/transcribe",
-  upload.single("audio"),
-  async (req: Request, res: Response) => {
-    if (!req.file) return res.status(400).send({ error: "No file attached" });
-
-    const input = req.file.path;
-    const output = `${input}.wav`;
-
-    try {
-      // Convert audio to wav 16k mono
-      await new Promise((resolve, reject) => {
-        ffmpeg(input)
-          .output(output)
-          .audioFrequency(16000)
-          .audioChannels(1)
-          .format("wav")
-          .on("end", resolve)
-          .on("error", reject)
-          .run();
-      });
-
-      // Decode wav → Float32Array
-      const buffer = fs.readFileSync(output);
-      const { channelData } = wav.decode(buffer);
-      const float32 = new Float32Array(channelData[0]);
-
-      // Transcribe
-      const result = await whisper(float32, {
-        language: "tg", // Таджикский
-        task: "transcribe",
-      });
-
-      fs.unlinkSync(input);
-      fs.unlinkSync(output);
-
-      return res.json({ text: result.text });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message });
-    }
-  },
-);
-// ------------------------------------------------
 
 // Routes
 app.get("/", (_req: Request, res: Response): void => {

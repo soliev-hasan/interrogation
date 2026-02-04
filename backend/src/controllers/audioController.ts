@@ -5,6 +5,7 @@ import FormData from "form-data";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
+import fetch from "node-fetch";
 import { appConfig } from "../config/app";
 import { InterrogationRepository } from "../repositories";
 
@@ -120,17 +121,25 @@ export const transcribeAudio = async (
     const mp3FilePath = req.file.path + ".mp3";
     await convertToMp3(req.file.path, mp3FilePath);
 
+    // Verify MP3 file was created
+    if (!fs.existsSync(mp3FilePath)) {
+      res.status(500).json({ message: "Failed to convert audio to MP3" });
+      return;
+    }
+
     // Forward the request to Python service
     const pythonServiceUrl = `${appConfig.pythonServiceUrl}/transcribe`;
 
     // Create form data to forward to Python service with MP3 file
     const form = new FormData();
+    const mp3FileName = req.file.originalname.replace(
+      path.extname(req.file.originalname),
+      ".mp3",
+    );
+    
     form.append("audio", fs.createReadStream(mp3FilePath), {
-      filename: req.file.originalname.replace(
-        path.extname(req.file.originalname),
-        ".mp3",
-      ),
-      contentType: "audio/mp3",
+      filename: mp3FileName,
+      contentType: "audio/mpeg",
     });
 
     // Log file information for debugging
@@ -143,7 +152,7 @@ export const transcribeAudio = async (
         ".mp3",
       ),
     );
-    console.log("  MIME type:", "audio/mp3");
+    console.log("  MIME type:", "audio/mpeg");
     console.log("  File path:", mp3FilePath);
     console.log("  File size:", fs.statSync(mp3FilePath).size);
 
@@ -152,11 +161,14 @@ export const transcribeAudio = async (
       form.append("max_length", req.body.max_length);
     }
 
-    // Make request to Python service
+    // Make request to Python service using node-fetch
+    // Get headers from form-data (includes boundary)
+    const formHeaders = form.getHeaders();
+    
     const response = await fetch(pythonServiceUrl, {
       method: "POST",
-      // @ts-ignore
-      body: form,
+      headers: formHeaders,
+      body: form as any, // form-data stream
     });
 
     if (!response.ok) {

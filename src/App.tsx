@@ -1065,7 +1065,7 @@ function RecordInterrogation() {
 
             if (transcriptionLanguage === "ru") return;
             setIsTranscribing(true);
-            const response = await fetch(`${api.API_BASE_URL}/transcribe`, {
+            const response = await fetch(`${api.API_BASE_URL}/audio/transcribe`, {
               method: "POST",
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -1078,7 +1078,7 @@ function RecordInterrogation() {
               // Update the transcript in the textarea
               setInterrogationData((prev) => ({
                 ...prev,
-                transcript: result.text || prev.transcript,
+                transcript: result.transcription || prev.transcript,
               }));
 
               // Hide loading spinner

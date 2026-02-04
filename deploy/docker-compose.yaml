@@ -41,7 +41,7 @@ services:
     container_name: "web"
     restart: unless-stopped
     build:
-      context: ../
+      context: ./interrogation/
       dockerfile: Dockerfile
       args:
         - NODE_ENV=$NODE_ENV
@@ -61,7 +61,7 @@ services:
   node:
     container_name: "node"
     build:
-      context: ../backend
+      context: ./interrogation/backend/
       dockerfile: Dockerfile
     restart: unless-stopped
     labels:
@@ -78,7 +78,7 @@ services:
   python:
     container_name: "python"
     build:
-      context: ../backend-py
+      context: ./interrogation/backend-py/
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
