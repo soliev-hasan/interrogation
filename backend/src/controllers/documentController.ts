@@ -86,7 +86,7 @@ export const downloadDocument = async (
     }
 
     // Set headers for file download
-    if (filename.endsWith(".docx")) {
+    if (filename.endsWith(".doc")) {
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${filename}"`,

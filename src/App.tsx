@@ -822,7 +822,7 @@ function ViewInterrogation({
       // Create download link
       const link = document.createElement("a");
       link.href = downloadResult.url;
-      link.download = `${interrogation.title}.docx`;
+      link.download = `${interrogation.title}.doc`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1065,13 +1065,16 @@ function RecordInterrogation() {
 
             if (transcriptionLanguage === "ru") return;
             setIsTranscribing(true);
-            const response = await fetch(`${api.API_BASE_URL}/audio/transcribe`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
+            const response = await fetch(
+              `${api.API_BASE_URL}/audio/transcribe`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: formData,
               },
-              body: formData,
-            });
+            );
             if (response.ok) {
               const result = await response.json();
 
@@ -1630,7 +1633,7 @@ ${tempInterrogationData.transcript}
       // Create download link
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${tempInterrogationData.title}.docx`;
+      link.download = `${tempInterrogationData.title}.doc`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
