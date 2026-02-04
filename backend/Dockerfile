@@ -1,25 +1,20 @@
-FROM node:18-slim
+FROM node:22.22-bookworm
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install ffmpeg
+RUN apt-get update \
+ && apt-get install -y ffmpeg \
+ && rm -rf /var/lib/apt/lists/*
 
-# Install all dependencies (including dev) for build
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+
+COPY package*.json ./
 RUN npm ci
 
-# Copy source code
 COPY . .
 
-# Create directories for uploads and documents
 RUN mkdir -p uploads documents
-
-# Build TypeScript code
 RUN npm run build
 
-# Remove dev dependencies for a smaller production image
-RUN npm prune --production
-
-# Start the application
 CMD ["npm", "start"]

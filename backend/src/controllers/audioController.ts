@@ -4,13 +4,13 @@ import path from "path";
 import FormData from "form-data";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegStatic from "ffmpeg-static";
-// import fetch from "node-fetch";
+// import ffmpegStatic from "ffmpeg-static";
+import fetch from "node-fetch";
 import { appConfig } from "../config/app";
 import { InterrogationRepository } from "../repositories";
 
 // Set ffmpeg path
-ffmpeg.setFfmpegPath(ffmpegStatic as string);
+ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
 
 // Function to convert audio file to MP3
 const convertToMp3 = (inputPath: string, outputPath: string): Promise<void> => {
@@ -127,6 +127,8 @@ export const transcribeAudio = async (
       return;
     }
 
+    console.log(1111111);
+
     // Forward the request to Python service
     const pythonServiceUrl = `${appConfig.pythonServiceUrl}/transcribe`;
 
@@ -136,7 +138,7 @@ export const transcribeAudio = async (
       path.extname(req.file.originalname),
       ".mp3",
     );
-    
+
     form.append("audio", fs.createReadStream(mp3FilePath), {
       filename: mp3FileName,
       contentType: "audio/mpeg",
@@ -164,10 +166,13 @@ export const transcribeAudio = async (
     // Make request to Python service using node-fetch
     // Get headers from form-data (includes boundary)
     const formHeaders = form.getHeaders();
-    
+
     const response = await fetch(pythonServiceUrl, {
       method: "POST",
       headers: formHeaders,
+      // {
+      //   "Content-Type": "multipart/form-data",
+      // },
       body: form as any, // form-data stream
     });
 

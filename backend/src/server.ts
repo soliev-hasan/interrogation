@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegPath from "ffmpeg-static";
+// import ffmpegPath from "ffmpeg-static";
 
 import interrogationRoutes from "./routes/interrogations";
 import authRoutes from "./routes/auth";
@@ -13,10 +13,10 @@ import documentsRoutes from "./routes/documents";
 import { appDataSource } from "./config/database";
 
 // Set ffmpeg path
-if (!ffmpegPath) {
-  throw new Error("ffmpeg binary not found");
-}
-ffmpeg.setFfmpegPath(ffmpegPath);
+// if (!ffmpegPath) {
+//   throw new Error("ffmpeg binary not found");
+// }
+ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
 
 // Load environment variables
 dotenv.config();
