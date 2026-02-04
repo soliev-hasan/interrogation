@@ -5,7 +5,7 @@ import FormData from "form-data";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 import { appConfig } from "../config/app";
 import { InterrogationRepository } from "../repositories";
 
